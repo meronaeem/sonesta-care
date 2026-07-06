@@ -55,7 +55,7 @@ function TicketsPage() {
 
   const create = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("tickets").insert({ ...payload, requester_id: user?.id });
+      const { error } = await supabase.from("tickets").insert({ ...payload, requester_id: user!.id } as never);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["tickets"] }); toast.success("Ticket created"); setOpen(false); },

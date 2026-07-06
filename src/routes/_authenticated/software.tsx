@@ -47,7 +47,7 @@ function SoftwarePage() {
 
   const create = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("software").insert(payload);
+      const { error } = await supabase.from("software").insert(payload as never);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); toast.success("Software added"); setOpen(false); },

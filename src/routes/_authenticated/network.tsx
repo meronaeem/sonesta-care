@@ -50,7 +50,7 @@ function NetworkPage() {
 
   const create = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("network_devices").insert(payload);
+      const { error } = await supabase.from("network_devices").insert(payload as never);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["network"] }); toast.success("Device added"); setOpen(false); },

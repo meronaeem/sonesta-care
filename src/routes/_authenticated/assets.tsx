@@ -54,7 +54,7 @@ function AssetsPage() {
 
   const createAsset = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("assets").insert(payload);
+      const { error } = await supabase.from("assets").insert(payload as never);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -77,7 +77,7 @@ function AssetsPage() {
         ip_address: r.ip_address as string | undefined,
         status: (r.status as string | undefined)?.toLowerCase() ?? "in_stock",
       }));
-      const { error } = await supabase.from("assets").insert(cleaned);
+      const { error } = await supabase.from("assets").insert(cleaned as never);
       if (error) throw error;
       qc.invalidateQueries({ queryKey: ["assets"] });
       toast.success(`Imported ${cleaned.length} assets`);

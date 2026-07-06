@@ -52,7 +52,7 @@ function ServersPage() {
 
   const create = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("servers").insert(payload);
+      const { error } = await supabase.from("servers").insert(payload as never);
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["servers"] }); toast.success("Server added"); setOpen(false); },
