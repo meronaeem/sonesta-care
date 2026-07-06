@@ -9,38 +9,149 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
+import { Route as AuthenticatedSoftwareRouteImport } from './routes/_authenticated/software'
+import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated/servers'
+import { Route as AuthenticatedNetworkRouteImport } from './routes/_authenticated/network'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated/assets'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSoftwareRoute = AuthenticatedSoftwareRouteImport.update({
+  id: '/software',
+  path: '/software',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedServersRoute = AuthenticatedServersRouteImport.update({
+  id: '/servers',
+  path: '/servers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedNetworkRoute = AuthenticatedNetworkRouteImport.update({
+  id: '/network',
+  path: '/network',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAssetsRoute = AuthenticatedAssetsRouteImport.update({
+  id: '/assets',
+  path: '/assets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/assets': typeof AuthenticatedAssetsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/network': typeof AuthenticatedNetworkRoute
+  '/servers': typeof AuthenticatedServersRoute
+  '/software': typeof AuthenticatedSoftwareRoute
+  '/tickets': typeof AuthenticatedTicketsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/assets': typeof AuthenticatedAssetsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/network': typeof AuthenticatedNetworkRoute
+  '/servers': typeof AuthenticatedServersRoute
+  '/software': typeof AuthenticatedSoftwareRoute
+  '/tickets': typeof AuthenticatedTicketsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/assets': typeof AuthenticatedAssetsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/network': typeof AuthenticatedNetworkRoute
+  '/_authenticated/servers': typeof AuthenticatedServersRoute
+  '/_authenticated/software': typeof AuthenticatedSoftwareRoute
+  '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/assets'
+    | '/dashboard'
+    | '/network'
+    | '/servers'
+    | '/software'
+    | '/tickets'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/assets'
+    | '/dashboard'
+    | '/network'
+    | '/servers'
+    | '/software'
+    | '/tickets'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/assets'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/network'
+    | '/_authenticated/servers'
+    | '/_authenticated/software'
+    | '/_authenticated/tickets'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +159,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/tickets': {
+      id: '/_authenticated/tickets'
+      path: '/tickets'
+      fullPath: '/tickets'
+      preLoaderRoute: typeof AuthenticatedTicketsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/software': {
+      id: '/_authenticated/software'
+      path: '/software'
+      fullPath: '/software'
+      preLoaderRoute: typeof AuthenticatedSoftwareRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/servers': {
+      id: '/_authenticated/servers'
+      path: '/servers'
+      fullPath: '/servers'
+      preLoaderRoute: typeof AuthenticatedServersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/network': {
+      id: '/_authenticated/network'
+      path: '/network'
+      fullPath: '/network'
+      preLoaderRoute: typeof AuthenticatedNetworkRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assets': {
+      id: '/_authenticated/assets'
+      path: '/assets'
+      fullPath: '/assets'
+      preLoaderRoute: typeof AuthenticatedAssetsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAssetsRoute: typeof AuthenticatedAssetsRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNetworkRoute: typeof AuthenticatedNetworkRoute
+  AuthenticatedServersRoute: typeof AuthenticatedServersRoute
+  AuthenticatedSoftwareRoute: typeof AuthenticatedSoftwareRoute
+  AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAssetsRoute: AuthenticatedAssetsRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNetworkRoute: AuthenticatedNetworkRoute,
+  AuthenticatedServersRoute: AuthenticatedServersRoute,
+  AuthenticatedSoftwareRoute: AuthenticatedSoftwareRoute,
+  AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
