@@ -81,9 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Enterprise IT operations console for hospitality: assets, help desk, licenses, network, and server management." },
       { name: "author", content: "Hotel IT Operations" },
       { property: "og:title", content: "Hotel IT Operations Management" },
-      { property: "og:description", content: "Enterprise IT operations console for hospitality." },
+      { property: "og:description", content: "Enterprise IT operations console for hospitality: assets, help desk, licenses, network, and server management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Hotel IT Operations Management" },
+      { name: "twitter:description", content: "Enterprise IT operations console for hospitality: assets, help desk, licenses, network, and server management." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/78bc15e5-f6e7-47d8-809c-a13e49ee2c10/id-preview-16bbf8cc--a2da120c-d276-42ff-bba8-ec4eea295a63.lovable.app-1783323711112.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/78bc15e5-f6e7-47d8-809c-a13e49ee2c10/id-preview-16bbf8cc--a2da120c-d276-42ff-bba8-ec4eea295a63.lovable.app-1783323711112.png" },
     ],
     links: [
       {
