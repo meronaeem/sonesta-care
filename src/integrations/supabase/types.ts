@@ -344,6 +344,181 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          email_pm_reminders: boolean
+          email_ticket_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          email_pm_reminders?: boolean
+          email_ticket_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          email_pm_reminders?: boolean
+          email_ticket_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pm_reminders_sent: {
+        Row: {
+          error: string | null
+          id: string
+          recipient_email: string
+          reminder_type: string
+          sent_at: string
+          success: boolean
+          task_id: string
+        }
+        Insert: {
+          error?: string | null
+          id?: string
+          recipient_email: string
+          reminder_type: string
+          sent_at?: string
+          success?: boolean
+          task_id: string
+        }
+        Update: {
+          error?: string | null
+          id?: string
+          recipient_email?: string
+          reminder_type?: string
+          sent_at?: string
+          success?: boolean
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pm_reminders_sent_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "pm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pm_schedules: {
+        Row: {
+          active: boolean
+          assigned_to: string | null
+          checklist: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: Database["public"]["Enums"]["pm_frequency"]
+          id: string
+          interval_days: number | null
+          last_completed: string | null
+          next_due: string
+          reminder_days_before: number
+          target_id: string
+          target_type: Database["public"]["Enums"]["pm_target"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          assigned_to?: string | null
+          checklist?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency: Database["public"]["Enums"]["pm_frequency"]
+          id?: string
+          interval_days?: number | null
+          last_completed?: string | null
+          next_due: string
+          reminder_days_before?: number
+          target_id: string
+          target_type: Database["public"]["Enums"]["pm_target"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          assigned_to?: string | null
+          checklist?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: Database["public"]["Enums"]["pm_frequency"]
+          id?: string
+          interval_days?: number | null
+          last_completed?: string | null
+          next_due?: string
+          reminder_days_before?: number
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["pm_target"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pm_tasks: {
+        Row: {
+          assigned_to: string | null
+          checklist: Json
+          completed_at: string | null
+          completed_by: string | null
+          completion_notes: string | null
+          created_at: string
+          due_date: string
+          id: string
+          schedule_id: string | null
+          status: Database["public"]["Enums"]["pm_task_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["pm_target"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          checklist?: Json
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["pm_task_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["pm_target"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          checklist?: Json
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          schedule_id?: string | null
+          status?: Database["public"]["Enums"]["pm_task_status"]
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["pm_target"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pm_tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "pm_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -691,6 +866,15 @@ export type Database = {
         | "pos"
         | "scanner"
         | "other"
+      pm_frequency:
+        | "weekly"
+        | "monthly"
+        | "quarterly"
+        | "semiannual"
+        | "annual"
+        | "custom_days"
+      pm_target: "asset" | "server" | "network_device"
+      pm_task_status: "open" | "in_progress" | "done" | "skipped" | "overdue"
       ticket_priority: "low" | "medium" | "high" | "critical"
       ticket_status:
         | "open"
@@ -861,6 +1045,16 @@ export const Constants = {
         "scanner",
         "other",
       ],
+      pm_frequency: [
+        "weekly",
+        "monthly",
+        "quarterly",
+        "semiannual",
+        "annual",
+        "custom_days",
+      ],
+      pm_target: ["asset", "server", "network_device"],
+      pm_task_status: ["open", "in_progress", "done", "skipped", "overdue"],
       ticket_priority: ["low", "medium", "high", "critical"],
       ticket_status: [
         "open",
