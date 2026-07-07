@@ -69,12 +69,12 @@ function PmPage() {
       const [a, s, n] = await Promise.all([
         supabase.from("assets").select("id, asset_tag, model"),
         supabase.from("servers").select("id, hostname"),
-        supabase.from("network_devices").select("id, hostname, device_type"),
+        supabase.from("network_devices").select("id, name, device_type"),
       ]);
       const out: TargetOption[] = [];
       for (const r of (a.data ?? [])) out.push({ id: r.id, type: "asset", label: `${r.asset_tag}${r.model ? ` · ${r.model}` : ""}` });
       for (const r of (s.data ?? [])) out.push({ id: r.id, type: "server", label: `Server · ${r.hostname}` });
-      for (const r of (n.data ?? [])) out.push({ id: r.id, type: "network_device", label: `${r.device_type ?? "Network"} · ${r.hostname}` });
+      for (const r of (n.data ?? [])) out.push({ id: r.id, type: "network_device", label: `${r.device_type ?? "Network"} · ${r.name}` });
       return out;
     },
   });

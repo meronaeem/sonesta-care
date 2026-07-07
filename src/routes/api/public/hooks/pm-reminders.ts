@@ -28,12 +28,13 @@ export const Route = createFileRoute("/api/public/hooks/pm-reminders")({
         if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
 
         let sent = 0, skipped = 0, failed = 0;
-        for (const t of (tasks ?? []) as Array<{
+        for (const t of (tasks ?? []) as unknown as Array<{
           id: string; title: string; due_date: string; assigned_to: string | null; status: string;
-          pm_schedules: { reminder_days_before: number } | null;
+          pm_schedules: { reminder_days_before: number } | Array<{ reminder_days_before: number }> | null;
         }>) {
           if (!t.assigned_to) { skipped++; continue; }
-          const daysBefore = t.pm_schedules?.reminder_days_before ?? 3;
+          const sched = Array.isArray(t.pm_schedules) ? t.pm_schedules[0] : t.pm_schedules;
+          const daysBefore = sched?.reminder_days_before ?? 3;
           const daysToDue = Math.round((new Date(t.due_date).getTime() - today.getTime()) / 864e5);
           const reminderType = daysToDue < 0 ? "overdue" : daysToDue <= daysBefore ? "upcoming" : null;
           if (!reminderType) { skipped++; continue; }

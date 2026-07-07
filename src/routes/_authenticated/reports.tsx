@@ -34,8 +34,8 @@ function ReportsPage() {
 
   const runInventory = async () => {
     let q = supabase.from("assets").select("asset_tag, asset_type, manufacturer, model, serial_number, hostname, status, warranty_end");
-    if (assetType !== "all") q = q.eq("asset_type", assetType);
-    if (assetStatus !== "all") q = q.eq("status", assetStatus);
+    if (assetType !== "all") q = q.eq("asset_type", assetType as never);
+    if (assetStatus !== "all") q = q.eq("status", assetStatus as never);
     const { data, error } = await q;
     if (error) return toast.error(error.message);
     const rows = (data ?? []);
@@ -46,8 +46,8 @@ function ReportsPage() {
 
   const runInventoryXlsx = async () => {
     let q = supabase.from("assets").select("*");
-    if (assetType !== "all") q = q.eq("asset_type", assetType);
-    if (assetStatus !== "all") q = q.eq("status", assetStatus);
+    if (assetType !== "all") q = q.eq("asset_type", assetType as never);
+    if (assetStatus !== "all") q = q.eq("status", assetStatus as never);
     const { data } = await q;
     exportToXlsx(data ?? [], `asset-inventory-${new Date().toISOString().slice(0, 10)}.xlsx`, "Assets");
   };
@@ -76,7 +76,7 @@ function ReportsPage() {
       created_at: t.created_at,
       requester_name: nameOf(t.requester_id),
       assignee_name: nameOf(t.assignee_id),
-      resolution: t.resolution_notes ?? null,
+      resolution: t.resolution ?? null,
       comments: (comments ?? []).map((c) => ({ author: nameOf(c.author_id), body: c.body, created_at: c.created_at })),
     });
   };
