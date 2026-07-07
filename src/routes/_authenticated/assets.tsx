@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus, Download, Upload, Pencil } from "lucide-react";
 import { DataTable, type Column } from "@/components/data-table";
 import { toast } from "sonner";
 import { fmtDate, labelize } from "@/lib/format";
@@ -39,9 +39,11 @@ type Asset = {
 };
 
 function AssetsPage() {
-  const { isIT } = useAuth();
+  const { isIT, hasRole } = useAuth();
+  const canEdit = hasRole("administrator");
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Asset | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["assets"],
@@ -61,6 +63,19 @@ function AssetsPage() {
       qc.invalidateQueries({ queryKey: ["assets"] });
       toast.success("Asset created");
       setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateAsset = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      const { error } = await supabase.from("assets").update(payload as never).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["assets"] });
+      toast.success("Asset updated");
+      setEditing(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -97,6 +112,25 @@ function AssetsPage() {
     { key: "warranty_end", label: "Warranty", render: (a) => fmtDate(a.warranty_end) },
   ];
 
+  if (canEdit) {
+    columns.push({
+      key: "_edit",
+      label: "",
+      render: (a) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditing(a);
+          }}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -127,28 +161,64 @@ function AssetsPage() {
         </div>
       </div>
       {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={rows} columns={columns} />}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        {editing && (
+          <AssetDialog
+            initial={editing}
+            onSubmit={(v) => updateAsset.mutate({ id: editing.id, payload: v })}
+            pending={updateAsset.isPending}
+            mode="edit"
+          />
+        )}
+      </Dialog>
     </div>
   );
 }
 
-function AssetDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean }) {
-  const [type, setType] = useState("laptop");
-  const [status, setStatus] = useState("in_stock");
-  const [form, setForm] = useState<Record<string, string>>({});
+function AssetDialog({
+  onSubmit,
+  pending,
+  initial,
+  mode = "create",
+}: {
+  onSubmit: (v: Record<string, unknown>) => void;
+  pending: boolean;
+  initial?: Record<string, unknown>;
+  mode?: "create" | "edit";
+}) {
+  const [type, setType] = useState((initial?.asset_type as string) ?? "laptop");
+  const [status, setStatus] = useState((initial?.status as string) ?? "in_stock");
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    if (!initial) return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(initial)) {
+      if (k === "asset_type" || k === "status") continue;
+      if (v == null) continue;
+      if (k.endsWith("_date") || k === "warranty_start" || k === "warranty_end") {
+        out[k] = String(v).slice(0, 10);
+      } else {
+        out[k] = String(v);
+      }
+    }
+    return out;
+  });
   const bind = (k: string) => ({ value: form[k] ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value })) });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned: Record<string, unknown> = { asset_type: type, status };
-    for (const [k, v] of Object.entries(form)) if (v) cleaned[k] = v;
+    for (const [k, v] of Object.entries(form)) cleaned[k] = v === "" ? null : v;
     if (typeof cleaned.purchase_cost === "string") cleaned.purchase_cost = parseFloat(cleaned.purchase_cost as string) || null;
     onSubmit(cleaned);
   };
 
   return (
     <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-      <DialogHeader><DialogTitle>New Asset</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Asset" : "New Asset"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {mode === "edit" && (
+          <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} /></div>
+        )}
         <div><Label>Type</Label>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger><SelectValue /></SelectTrigger>
@@ -179,7 +249,7 @@ function AssetDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unkno
         <div><Label>Invoice Number</Label><Input {...bind("invoice_number")} /></div>
         <div className="md:col-span-2"><Label>Notes</Label><Textarea {...bind("notes")} /></div>
         <DialogFooter className="md:col-span-2">
-          <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Create asset"}</Button>
+          <Button type="submit" disabled={pending}>{pending ? "Saving…" : mode === "edit" ? "Save changes" : "Create asset"}</Button>
         </DialogFooter>
       </form>
     </DialogContent>
