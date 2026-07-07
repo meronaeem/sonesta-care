@@ -8,6 +8,8 @@ import {
   ServerCog,
   LogOut,
   Server,
+  Wrench,
+  FileText,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +33,8 @@ const nav = [
   { title: "Software & Licenses", url: "/software", icon: Package },
   { title: "Network", url: "/network", icon: Network },
   { title: "Servers", url: "/servers", icon: ServerCog },
+  { title: "Preventive Maintenance", url: "/pm", icon: Wrench },
+  { title: "Reports", url: "/reports", icon: FileText },
 ];
 
 export function AppSidebar({ userLabel, roleLabel }: { userLabel: string; roleLabel: string }) {

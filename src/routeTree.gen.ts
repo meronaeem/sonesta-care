@@ -15,9 +15,12 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
 import { Route as AuthenticatedSoftwareRouteImport } from './routes/_authenticated/software'
 import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated/servers'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedPmRouteImport } from './routes/_authenticated/pm'
 import { Route as AuthenticatedNetworkRouteImport } from './routes/_authenticated/network'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated/assets'
+import { Route as ApiPublicHooksPmRemindersRouteImport } from './routes/api/public/hooks/pm-reminders'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -48,6 +51,16 @@ const AuthenticatedServersRoute = AuthenticatedServersRouteImport.update({
   path: '/servers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPmRoute = AuthenticatedPmRouteImport.update({
+  id: '/pm',
+  path: '/pm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedNetworkRoute = AuthenticatedNetworkRouteImport.update({
   id: '/network',
   path: '/network',
@@ -63,6 +76,12 @@ const AuthenticatedAssetsRoute = AuthenticatedAssetsRouteImport.update({
   path: '/assets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicHooksPmRemindersRoute =
+  ApiPublicHooksPmRemindersRouteImport.update({
+    id: '/api/public/hooks/pm-reminders',
+    path: '/api/public/hooks/pm-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -70,9 +89,12 @@ export interface FileRoutesByFullPath {
   '/assets': typeof AuthenticatedAssetsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/network': typeof AuthenticatedNetworkRoute
+  '/pm': typeof AuthenticatedPmRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/servers': typeof AuthenticatedServersRoute
   '/software': typeof AuthenticatedSoftwareRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -80,9 +102,12 @@ export interface FileRoutesByTo {
   '/assets': typeof AuthenticatedAssetsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/network': typeof AuthenticatedNetworkRoute
+  '/pm': typeof AuthenticatedPmRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/servers': typeof AuthenticatedServersRoute
   '/software': typeof AuthenticatedSoftwareRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,9 +117,12 @@ export interface FileRoutesById {
   '/_authenticated/assets': typeof AuthenticatedAssetsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/network': typeof AuthenticatedNetworkRoute
+  '/_authenticated/pm': typeof AuthenticatedPmRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/software': typeof AuthenticatedSoftwareRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
+  '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -104,9 +132,12 @@ export interface FileRouteTypes {
     | '/assets'
     | '/dashboard'
     | '/network'
+    | '/pm'
+    | '/reports'
     | '/servers'
     | '/software'
     | '/tickets'
+    | '/api/public/hooks/pm-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -114,9 +145,12 @@ export interface FileRouteTypes {
     | '/assets'
     | '/dashboard'
     | '/network'
+    | '/pm'
+    | '/reports'
     | '/servers'
     | '/software'
     | '/tickets'
+    | '/api/public/hooks/pm-reminders'
   id:
     | '__root__'
     | '/'
@@ -125,15 +159,19 @@ export interface FileRouteTypes {
     | '/_authenticated/assets'
     | '/_authenticated/dashboard'
     | '/_authenticated/network'
+    | '/_authenticated/pm'
+    | '/_authenticated/reports'
     | '/_authenticated/servers'
     | '/_authenticated/software'
     | '/_authenticated/tickets'
+    | '/api/public/hooks/pm-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksPmRemindersRoute: typeof ApiPublicHooksPmRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,6 +218,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pm': {
+      id: '/_authenticated/pm'
+      path: '/pm'
+      fullPath: '/pm'
+      preLoaderRoute: typeof AuthenticatedPmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/network': {
       id: '/_authenticated/network'
       path: '/network'
@@ -201,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssetsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/pm-reminders': {
+      id: '/api/public/hooks/pm-reminders'
+      path: '/api/public/hooks/pm-reminders'
+      fullPath: '/api/public/hooks/pm-reminders'
+      preLoaderRoute: typeof ApiPublicHooksPmRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -208,6 +267,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssetsRoute: typeof AuthenticatedAssetsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNetworkRoute: typeof AuthenticatedNetworkRoute
+  AuthenticatedPmRoute: typeof AuthenticatedPmRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedServersRoute: typeof AuthenticatedServersRoute
   AuthenticatedSoftwareRoute: typeof AuthenticatedSoftwareRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
@@ -217,6 +278,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssetsRoute: AuthenticatedAssetsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNetworkRoute: AuthenticatedNetworkRoute,
+  AuthenticatedPmRoute: AuthenticatedPmRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedServersRoute: AuthenticatedServersRoute,
   AuthenticatedSoftwareRoute: AuthenticatedSoftwareRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
@@ -229,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksPmRemindersRoute: ApiPublicHooksPmRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
