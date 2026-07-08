@@ -14,6 +14,8 @@ import { fmtDate, daysUntil } from "@/lib/format";
 import { exportToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
+import { BulkEditBar } from "@/components/bulk-edit-bar";
+import { labelize } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/software")({
   head: () => ({ meta: [{ title: "Software & Licenses • Hotel IT Ops" }] }),
@@ -35,6 +37,7 @@ function SoftwarePage() {
   const { isIT } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["software"],
@@ -51,6 +54,21 @@ function SoftwarePage() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); toast.success("Software added"); setOpen(false); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulk = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("software").update(updates as never).in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["software"] });
+      toast.success(`Updated ${n} record${n === 1 ? "" : "s"}`);
+      setSelected(new Set());
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -86,7 +104,26 @@ function SoftwarePage() {
           )}
         </div>
       </div>
-      {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={rows} columns={columns} />}
+      {isIT && (
+        <BulkEditBar
+          count={selected.size}
+          pending={bulk.isPending}
+          onClear={() => setSelected(new Set())}
+          onApply={(u) => bulk.mutate(u)}
+          fields={[
+            { key: "license_type", label: "License", options: ["perpetual","subscription","oem","volume","freeware","trial"].map((s) => ({ value: s, label: labelize(s) })) },
+          ]}
+        />
+      )}
+      {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          selectable={isIT}
+          selectedIds={selected}
+          onSelectionChange={setSelected}
+        />
+      )}
     </div>
   );
 }
