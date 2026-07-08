@@ -8,12 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
 import { fmtDateTime, labelize } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
+import { AttachmentsPanel } from "@/components/attachments-panel";
+import { ActivityTimeline } from "@/components/activity-timeline";
+import { BulkEditBar } from "@/components/bulk-edit-bar";
 
 export const Route = createFileRoute("/_authenticated/tickets")({
   head: () => ({ meta: [{ title: "Help Desk • Hotel IT Ops" }] }),
@@ -24,11 +29,13 @@ type Ticket = {
   id: string;
   ticket_number: string;
   title: string;
+  description: string | null;
   category: string | null;
   priority: string;
   status: string;
   requester_id: string;
   assignee_id: string | null;
+  resolution: string | null;
   created_at: string;
 };
 
@@ -40,9 +47,11 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 function TicketsPage() {
-  const { user } = useAuth();
+  const { user, isIT } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["tickets"],
@@ -62,6 +71,32 @@ function TicketsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const { data: itUsers = [] } = useQuery({
+    queryKey: ["it_users"],
+    enabled: isIT,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name, email");
+      return (data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+    },
+  });
+
+  const bulk = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      const ids = Array.from(selected);
+      const patch: Record<string, unknown> = { ...updates };
+      if (patch.assignee_id === "__unassigned__") patch.assignee_id = null;
+      const { error } = await supabase.from("tickets").update(patch as never).in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+      toast.success(`Updated ${n} ticket${n === 1 ? "" : "s"}`);
+      setSelected(new Set());
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const columns: Column<Ticket>[] = [
     { key: "ticket_number", label: "#", render: (t) => <span className="font-mono text-xs">{t.ticket_number}</span> },
     { key: "title", label: "Title", render: (t) => <span className="font-medium">{t.title}</span> },
@@ -70,6 +105,8 @@ function TicketsPage() {
     { key: "status", label: "Status", render: (t) => <Badge variant="outline">{labelize(t.status)}</Badge> },
     { key: "created_at", label: "Created", render: (t) => <span className="text-xs text-muted-foreground">{fmtDateTime(t.created_at)}</span> },
   ];
+
+  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
 
   return (
     <div className="space-y-4">
@@ -85,7 +122,64 @@ function TicketsPage() {
           <TicketDialog onSubmit={(v) => create.mutate(v)} pending={create.isPending} />
         </Dialog>
       </div>
-      {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={rows} columns={columns} />}
+      {isIT && (
+        <BulkEditBar
+          count={selected.size}
+          pending={bulk.isPending}
+          onClear={() => setSelected(new Set())}
+          onApply={(u) => bulk.mutate(u)}
+          fields={[
+            { key: "status", label: "Status", options: ["open","in_progress","on_hold","resolved","closed","cancelled"].map((s) => ({ value: s, label: labelize(s) })) },
+            { key: "priority", label: "Priority", options: ["low","medium","high","critical"].map((s) => ({ value: s, label: labelize(s) })) },
+            { key: "assignee_id", label: "Assignee", options: [{ value: "__unassigned__", label: "Unassigned" }, ...itUsers.map((u) => ({ value: u.id, label: u.full_name ?? u.email ?? u.id }))] },
+          ]}
+        />
+      )}
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      ) : (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          onRowClick={(t) => setDetailId(t.id)}
+          selectable={isIT}
+          selectedIds={selected}
+          onSelectionChange={setSelected}
+        />
+      )}
+      <Sheet open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          {detail && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xs">{detail.ticket_number}</span>
+                  <span>{detail.title}</span>
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[detail.priority]}`}>{labelize(detail.priority)}</span>
+                <Badge variant="outline">{labelize(detail.status)}</Badge>
+                {detail.category && <Badge variant="secondary">{detail.category}</Badge>}
+              </div>
+              {detail.description && (
+                <div className="mt-3 text-sm whitespace-pre-wrap p-3 rounded border bg-muted/40">{detail.description}</div>
+              )}
+              {detail.resolution && (
+                <div className="mt-3 text-sm whitespace-pre-wrap p-3 rounded border bg-green-50 dark:bg-green-950/30">
+                  <div className="text-xs font-medium mb-1">Resolution</div>
+                  {detail.resolution}
+                </div>
+              )}
+              <Separator className="my-4" />
+              <AttachmentsPanel entityType="ticket" entityId={detail.id} />
+              <Separator className="my-4" />
+              <div className="text-sm font-medium mb-2">History</div>
+              <ActivityTimeline entityType="ticket" entityId={detail.id} />
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
