@@ -19,6 +19,7 @@ import { fmtDate, labelize, daysUntil } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { runPmReminders } from "@/lib/pm.functions";
 import { generatePmComplianceReport } from "@/lib/pdf-reports";
+import { BulkEditBar } from "@/components/bulk-edit-bar";
 
 export const Route = createFileRoute("/_authenticated/pm")({
   head: () => ({ meta: [{ title: "Preventive Maintenance • Hotel IT Ops" }] }),
@@ -95,6 +96,7 @@ function PmPage() {
   }, [targets]);
 
   const [openSched, setOpenSched] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const createSchedule = useMutation({
     mutationFn: async (payload: Record<string, unknown>) => {
@@ -131,6 +133,23 @@ function PmPage() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pm_tasks"] }),
+  });
+
+  const bulkTasks = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      const ids = Array.from(selected);
+      const patch: Record<string, unknown> = { ...updates };
+      if (patch.assigned_to === "__unassigned__") patch.assigned_to = null;
+      const { error } = await supabase.from("pm_tasks" as never).update(patch as never).in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["pm_tasks"] });
+      toast.success(`Updated ${n} task${n === 1 ? "" : "s"}`);
+      setSelected(new Set());
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const handleRunReminders = async () => {
@@ -221,7 +240,27 @@ function PmPage() {
           <TabsTrigger value="history">Completed</TabsTrigger>
         </TabsList>
         <TabsContent value="tasks" className="mt-4">
-          {tLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={openTasks} columns={taskCols} />}
+          {isIT && (
+            <BulkEditBar
+              count={selected.size}
+              pending={bulkTasks.isPending}
+              onClear={() => setSelected(new Set())}
+              onApply={(u) => bulkTasks.mutate(u)}
+              fields={[
+                { key: "status", label: "Status", options: ["open","in_progress","done","skipped","overdue"].map((s) => ({ value: s, label: labelize(s) })) },
+                { key: "assigned_to", label: "Assignee", options: [{ value: "__unassigned__", label: "Unassigned" }, ...users.map((u) => ({ value: u.id, label: u.full_name ?? u.email ?? u.id }))] },
+              ]}
+            />
+          )}
+          {tLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : (
+            <DataTable
+              rows={openTasks}
+              columns={taskCols}
+              selectable={isIT}
+              selectedIds={selected}
+              onSelectionChange={setSelected}
+            />
+          )}
         </TabsContent>
         <TabsContent value="schedules" className="mt-4">
           {sLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={schedules} columns={schedCols} />}
