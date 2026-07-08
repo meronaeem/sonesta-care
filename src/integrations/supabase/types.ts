@@ -225,6 +225,42 @@ export type Database = {
           },
         ]
       }
+      attachments: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           code: string | null
@@ -832,6 +868,15 @@ export type Database = {
         Returns: boolean
       }
       is_it_staff: { Args: { _user_id: string }; Returns: boolean }
+      log_activity: {
+        Args: {
+          _action: string
+          _details: Json
+          _entity_id: string
+          _entity_type: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
