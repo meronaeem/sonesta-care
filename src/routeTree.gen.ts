@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
+import { Route as AuthenticatedTechRouteImport } from './routes/_authenticated/tech'
 import { Route as AuthenticatedSoftwareRouteImport } from './routes/_authenticated/software'
 import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated/servers'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -40,6 +41,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
   id: '/tickets',
   path: '/tickets',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTechRoute = AuthenticatedTechRouteImport.update({
+  id: '/tech',
+  path: '/tech',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSoftwareRoute = AuthenticatedSoftwareRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/servers': typeof AuthenticatedServersRoute
   '/software': typeof AuthenticatedSoftwareRoute
+  '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/servers': typeof AuthenticatedServersRoute
   '/software': typeof AuthenticatedSoftwareRoute
+  '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/software': typeof AuthenticatedSoftwareRoute
+  '/_authenticated/tech': typeof AuthenticatedTechRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/servers'
     | '/software'
+    | '/tech'
     | '/tickets'
     | '/api/public/hooks/pm-reminders'
   fileRoutesByTo: FileRoutesByTo
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/servers'
     | '/software'
+    | '/tech'
     | '/tickets'
     | '/api/public/hooks/pm-reminders'
   id:
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/servers'
     | '/_authenticated/software'
+    | '/_authenticated/tech'
     | '/_authenticated/tickets'
     | '/api/public/hooks/pm-reminders'
   fileRoutesById: FileRoutesById
@@ -214,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/tickets'
       fullPath: '/tickets'
       preLoaderRoute: typeof AuthenticatedTicketsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tech': {
+      id: '/_authenticated/tech'
+      path: '/tech'
+      fullPath: '/tech'
+      preLoaderRoute: typeof AuthenticatedTechRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/software': {
@@ -291,6 +310,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedServersRoute: typeof AuthenticatedServersRoute
   AuthenticatedSoftwareRoute: typeof AuthenticatedSoftwareRoute
+  AuthenticatedTechRoute: typeof AuthenticatedTechRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
 }
 
@@ -303,6 +323,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedServersRoute: AuthenticatedServersRoute,
   AuthenticatedSoftwareRoute: AuthenticatedSoftwareRoute,
+  AuthenticatedTechRoute: AuthenticatedTechRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
 }
 
@@ -318,13 +339,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
