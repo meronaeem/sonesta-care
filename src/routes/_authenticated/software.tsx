@@ -10,12 +10,11 @@ import { Plus, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
-import { fmtDate, daysUntil } from "@/lib/format";
+import { fmtDate, daysUntil, labelize } from "@/lib/format";
 import { exportToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { BulkEditBar } from "@/components/bulk-edit-bar";
-import { labelize } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/software")({
   head: () => ({ meta: [{ title: "Software & Licenses • Hotel IT Ops" }] }),
