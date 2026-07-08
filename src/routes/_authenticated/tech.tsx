@@ -37,7 +37,10 @@ type Asset = {
   notes: string | null;
 };
 
-type Location = { id: string; name: string };
+type Location = { id: string; building: string; floor: string | null; room: string | null };
+
+const locLabel = (l: Location) =>
+  [l.building, l.floor, l.room].filter(Boolean).join(" · ");
 
 function parseTag(raw: string): string {
   const s = raw.trim();
@@ -75,7 +78,7 @@ function TechPage() {
 
   useEffect(() => {
     void (async () => {
-      const { data } = await supabase.from("locations").select("id,name").order("name");
+      const { data } = await supabase.from("locations").select("id,building,floor,room").order("building");
       setLocations((data as Location[]) || []);
     })();
   }, []);
@@ -276,7 +279,7 @@ function TechPage() {
                     <SelectTrigger className="h-12"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none">— None —</SelectItem>
-                      {locations.map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                      {locations.map((l) => <SelectItem key={l.id} value={l.id}>{locLabel(l)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
