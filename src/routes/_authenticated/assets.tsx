@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { Plus, Download, Upload, Pencil } from "lucide-react";
 import { DataTable, type Column } from "@/components/data-table";
@@ -15,6 +17,9 @@ import { toast } from "sonner";
 import { fmtDate, labelize } from "@/lib/format";
 import { exportToXlsx, importFromXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
+import { AttachmentsPanel } from "@/components/attachments-panel";
+import { ActivityTimeline } from "@/components/activity-timeline";
+import { BulkEditBar } from "@/components/bulk-edit-bar";
 
 export const Route = createFileRoute("/_authenticated/assets")({
   head: () => ({ meta: [{ title: "Asset Inventory • Hotel IT Ops" }] }),
@@ -44,6 +49,8 @@ function AssetsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Asset | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["assets"],
@@ -76,6 +83,21 @@ function AssetsPage() {
       qc.invalidateQueries({ queryKey: ["assets"] });
       toast.success("Asset updated");
       setEditing(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkUpdate = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      const ids = Array.from(selected);
+      const { error } = await supabase.from("assets").update(updates as never).in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (n) => {
+      qc.invalidateQueries({ queryKey: ["assets"] });
+      toast.success(`Updated ${n} asset${n === 1 ? "" : "s"}`);
+      setSelected(new Set());
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -131,6 +153,8 @@ function AssetsPage() {
     });
   }
 
+  const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -160,7 +184,30 @@ function AssetsPage() {
           )}
         </div>
       </div>
-      {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={rows} columns={columns} />}
+      {canEdit && (
+        <BulkEditBar
+          count={selected.size}
+          pending={bulkUpdate.isPending}
+          onClear={() => setSelected(new Set())}
+          onApply={(u) => bulkUpdate.mutate(u)}
+          fields={[
+            { key: "status", label: "Status", options: ASSET_STATUSES.map((s) => ({ value: s, label: labelize(s) })) },
+            { key: "asset_type", label: "Type", options: ASSET_TYPES.map((s) => ({ value: s, label: labelize(s) })) },
+          ]}
+        />
+      )}
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      ) : (
+        <DataTable
+          rows={rows}
+          columns={columns}
+          onRowClick={(r) => setDetailId(r.id)}
+          selectable={canEdit}
+          selectedIds={selected}
+          onSelectionChange={setSelected}
+        />
+      )}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         {editing && (
           <AssetDialog
@@ -171,6 +218,42 @@ function AssetsPage() {
           />
         )}
       </Dialog>
+      <Sheet open={!!detailId} onOpenChange={(o) => !o && setDetailId(null)}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          {detail && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <span className="font-mono text-sm">{detail.asset_tag}</span>
+                  <Badge variant="secondary">{labelize(detail.asset_type)}</Badge>
+                  <Badge>{labelize(detail.status)}</Badge>
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 space-y-2 text-sm">
+                <Row k="Make/Model" v={`${detail.manufacturer ?? "—"} ${detail.model ?? ""}`.trim()} />
+                <Row k="Serial" v={detail.serial_number} />
+                <Row k="Hostname" v={detail.hostname} />
+                <Row k="IP address" v={detail.ip_address} />
+                <Row k="Warranty end" v={fmtDate(detail.warranty_end)} />
+              </div>
+              <Separator className="my-4" />
+              <AttachmentsPanel entityType="asset" entityId={detail.id} />
+              <Separator className="my-4" />
+              <div className="text-sm font-medium mb-2">History</div>
+              <ActivityTimeline entityType="asset" entityId={detail.id} />
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string | null | undefined }) {
+  return (
+    <div className="flex gap-2">
+      <span className="w-28 text-muted-foreground">{k}</span>
+      <span className="flex-1">{v || "—"}</span>
     </div>
   );
 }
