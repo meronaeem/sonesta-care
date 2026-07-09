@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { QrCode, Camera, X, Search, Save, Loader2 } from "lucide-react";
+import { Barcode, Camera, X, Search, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { labelize, fmtDate } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
@@ -74,7 +74,7 @@ function TechPage() {
   const [creatingTicket, setCreatingTicket] = useState(false);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
-  const scannerDivId = "tech-qr-reader";
+  const scannerDivId = "tech-barcode-reader";
 
   useEffect(() => {
     void (async () => {
@@ -123,11 +123,25 @@ function TechPage() {
     // wait a tick for div to mount
     await new Promise((r) => setTimeout(r, 50));
     try {
-      const inst = new Html5Qrcode(scannerDivId, { verbose: false });
+      const inst = new Html5Qrcode(scannerDivId, {
+        verbose: false,
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.ITF,
+          Html5QrcodeSupportedFormats.CODABAR,
+          Html5QrcodeSupportedFormats.QR_CODE,
+        ],
+      });
       scannerRef.current = inst;
       await inst.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 240, height: 240 } },
+        { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 1.7778 },
         async (decoded) => {
           await inst.stop().catch(() => {});
           inst.clear();
@@ -199,9 +213,9 @@ function TechPage() {
     <div className="max-w-lg mx-auto space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <QrCode className="h-6 w-6" /> Technician Mode
+          <Barcode className="h-6 w-6" /> Technician Mode
         </h1>
-        <p className="text-sm text-muted-foreground">Scan an asset tag QR code to view or update on-site.</p>
+        <p className="text-sm text-muted-foreground">Scan an asset barcode to view or update on-site.</p>
       </div>
 
       <Card>
@@ -215,7 +229,7 @@ function TechPage() {
             </div>
           ) : (
             <Button className="w-full h-14 text-base" onClick={startScan}>
-              <Camera className="h-5 w-5 mr-2" /> Scan QR code
+              <Camera className="h-5 w-5 mr-2" /> Scan barcode
             </Button>
           )}
           <div className="flex items-center gap-2">
