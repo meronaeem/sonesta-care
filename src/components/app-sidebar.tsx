@@ -11,7 +11,7 @@ import {
   Wrench,
   FileText,
   Activity,
-  QrCode,
+  Barcode,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,7 +36,7 @@ const nav = [
   { title: "Network", url: "/network", icon: Network },
   { title: "Servers", url: "/servers", icon: ServerCog },
   { title: "Preventive Maintenance", url: "/pm", icon: Wrench },
-  { title: "Technician Mode", url: "/tech", icon: QrCode },
+  { title: "Technician Mode", url: "/tech", icon: Barcode },
   { title: "Activity Feed", url: "/activity", icon: Activity },
   { title: "Reports", url: "/reports", icon: FileText },
 ];
