@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, Paperclip, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
 import { fmtDateTime, labelize } from "@/lib/format";
@@ -63,9 +63,36 @@ function TicketsPage() {
   });
 
   const create = useMutation({
-    mutationFn: async (payload: Record<string, unknown>) => {
-      const { error } = await supabase.from("tickets").insert({ ...payload, requester_id: user!.id } as never);
+    mutationFn: async ({ payload, files }: { payload: Record<string, unknown>; files: File[] }) => {
+      const { data, error } = await supabase.from("tickets").insert({ ...payload, requester_id: user!.id } as never).select("id").single();
       if (error) throw error;
+      const ticketId = (data as { id: string }).id;
+      for (const file of files) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 10 MB, skipped`);
+          continue;
+        }
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${user!.id}/ticket/${ticketId}/${Date.now()}-${safeName}`;
+        const { error: upErr } = await supabase.storage.from("attachments").upload(path, file, {
+          contentType: file.type || undefined,
+          upsert: false,
+        });
+        if (upErr) { toast.error(`${file.name}: ${upErr.message}`); continue; }
+        const { error: dbErr } = await supabase.from("attachments" as never).insert({
+          entity_type: "ticket",
+          entity_id: ticketId,
+          storage_path: path,
+          file_name: file.name,
+          mime_type: file.type || null,
+          size_bytes: file.size,
+          uploaded_by: user!.id,
+        } as never);
+        if (dbErr) {
+          await supabase.storage.from("attachments").remove([path]);
+          toast.error(`${file.name}: ${dbErr.message}`);
+        }
+      }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["tickets"] }); toast.success("Ticket created"); setOpen(false); },
     onError: (e: Error) => toast.error(e.message),
@@ -119,7 +146,7 @@ function TicketsPage() {
           <DialogTrigger asChild>
             <Button size="sm"><Plus className="h-4 w-4 mr-2" /> New Ticket</Button>
           </DialogTrigger>
-          <TicketDialog onSubmit={(v) => create.mutate(v)} pending={create.isPending} />
+          <TicketDialog onSubmit={(payload, files) => create.mutate({ payload, files })} pending={create.isPending} />
         </Dialog>
       </div>
       {isIT && (
@@ -184,15 +211,23 @@ function TicketsPage() {
   );
 }
 
-function TicketDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean }) {
+function TicketDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unknown>, files: File[]) => void; pending: boolean }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [files, setFiles] = useState<File[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ title, description, category, priority });
+    onSubmit({ title, description, category, priority }, files);
   };
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    setFiles((prev) => [...prev, ...picked]);
+  };
+  const removeAt = (i: number) => setFiles((prev) => prev.filter((_, idx) => idx !== i));
   return (
     <DialogContent>
       <DialogHeader><DialogTitle>Submit ticket</DialogTitle></DialogHeader>
@@ -217,6 +252,28 @@ function TicketDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unkn
           </div>
         </div>
         <div><Label>Description</Label><Textarea rows={5} required value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+        <div>
+          <Label>Attachments</Label>
+          <input ref={fileRef} type="file" multiple hidden onChange={onPick} />
+          <div className="flex items-center gap-2 mt-1">
+            <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+              <Paperclip className="h-4 w-4 mr-2" /> Add files
+            </Button>
+            <span className="text-xs text-muted-foreground">Max 10 MB per file.</span>
+          </div>
+          {files.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {files.map((f, i) => (
+                <li key={i} className="flex items-center gap-2 text-xs rounded border px-2 py-1 bg-muted/40">
+                  <Paperclip className="h-3 w-3 shrink-0" />
+                  <span className="truncate flex-1">{f.name}</span>
+                  <span className="text-muted-foreground">{(f.size / 1024).toFixed(1)} KB</span>
+                  <button type="button" onClick={() => removeAt(i)} aria-label="Remove"><X className="h-3 w-3" /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Submitting…" : "Submit ticket"}</Button></DialogFooter>
       </form>
     </DialogContent>
