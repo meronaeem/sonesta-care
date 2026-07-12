@@ -125,10 +125,10 @@ function AssetsPage() {
 
   const columns: Column<Asset>[] = [
     { key: "asset_tag", label: "Tag", render: (a) => <span className="font-mono text-xs">{a.asset_tag}</span> },
+    { key: "hostname", label: "FQDN", render: (a) => <span className="font-medium">{a.hostname || "—"}</span> },
     { key: "asset_type", label: "Type", render: (a) => <Badge variant="secondary">{labelize(a.asset_type)}</Badge> },
     { key: "manufacturer", label: "Make/Model", render: (a) => `${a.manufacturer ?? "—"} ${a.model ?? ""}`.trim() },
     { key: "serial_number", label: "Serial" },
-    { key: "hostname", label: "FQDN" },
     { key: "ip_address", label: "IP" },
     { key: "status", label: "Status", render: (a) => <Badge>{labelize(a.status)}</Badge> },
     { key: "warranty_end", label: "Warranty", render: (a) => fmtDate(a.warranty_end) },
@@ -230,9 +230,9 @@ function AssetsPage() {
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-2 text-sm">
+                <Row k="FQDN" v={detail.hostname} />
                 <Row k="Make/Model" v={`${detail.manufacturer ?? "—"} ${detail.model ?? ""}`.trim()} />
                 <Row k="Serial" v={detail.serial_number} />
-                <Row k="FQDN" v={detail.hostname} />
                 <Row k="IP address" v={detail.ip_address} />
                 <Row k="Warranty end" v={fmtDate(detail.warranty_end)} />
               </div>
