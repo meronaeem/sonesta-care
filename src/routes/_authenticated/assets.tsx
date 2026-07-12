@@ -299,8 +299,14 @@ function AssetDialog({
     <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Asset" : "New Asset"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="md:col-span-2">
+          <Label className="flex items-center gap-2">
+            FQDN <span className="text-xs font-normal text-muted-foreground">(primary identifier)</span>
+          </Label>
+          <Input {...bind("hostname")} placeholder="e.g. frontdesk-pc.hotel.local" className="font-medium" />
+        </div>
         {mode === "edit" && (
-          <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} /></div>
+          <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} disabled /></div>
         )}
         <div><Label>Type</Label>
           <Select value={type} onValueChange={setType}>
@@ -321,7 +327,6 @@ function AssetDialog({
         <div><Label>RAM</Label><Input {...bind("ram")} /></div>
         <div><Label>Storage</Label><Input {...bind("storage")} /></div>
         <div><Label>Operating System</Label><Input {...bind("operating_system")} /></div>
-        <div><Label>FQDN</Label><Input {...bind("hostname")} /></div>
         <div><Label>IP Address</Label><Input {...bind("ip_address")} /></div>
         <div><Label>MAC Address</Label><Input {...bind("mac_address")} /></div>
         <div><Label>Warranty Start</Label><Input type="date" {...bind("warranty_start")} /></div>
