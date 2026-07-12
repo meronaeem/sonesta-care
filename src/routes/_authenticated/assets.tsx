@@ -306,7 +306,7 @@ function AssetDialog({
           <Input {...bind("hostname")} placeholder="e.g. frontdesk-pc.hotel.local" className="font-medium" />
         </div>
         {mode === "edit" && (
-          <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} disabled /></div>
+          <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} /></div>
         )}
         <div><Label>Type</Label>
           <Select value={type} onValueChange={setType}>
