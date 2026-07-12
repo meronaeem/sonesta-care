@@ -125,10 +125,10 @@ function AssetsPage() {
 
   const columns: Column<Asset>[] = [
     { key: "asset_tag", label: "Tag", render: (a) => <span className="font-mono text-xs">{a.asset_tag}</span> },
+    { key: "hostname", label: "FQDN", render: (a) => <span className="font-medium">{a.hostname || "—"}</span> },
     { key: "asset_type", label: "Type", render: (a) => <Badge variant="secondary">{labelize(a.asset_type)}</Badge> },
     { key: "manufacturer", label: "Make/Model", render: (a) => `${a.manufacturer ?? "—"} ${a.model ?? ""}`.trim() },
     { key: "serial_number", label: "Serial" },
-    { key: "hostname", label: "FQDN" },
     { key: "ip_address", label: "IP" },
     { key: "status", label: "Status", render: (a) => <Badge>{labelize(a.status)}</Badge> },
     { key: "warranty_end", label: "Warranty", render: (a) => fmtDate(a.warranty_end) },
@@ -230,9 +230,9 @@ function AssetsPage() {
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-2 text-sm">
+                <Row k="FQDN" v={detail.hostname} />
                 <Row k="Make/Model" v={`${detail.manufacturer ?? "—"} ${detail.model ?? ""}`.trim()} />
                 <Row k="Serial" v={detail.serial_number} />
-                <Row k="FQDN" v={detail.hostname} />
                 <Row k="IP address" v={detail.ip_address} />
                 <Row k="Warranty end" v={fmtDate(detail.warranty_end)} />
               </div>
@@ -299,6 +299,12 @@ function AssetDialog({
     <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Asset" : "New Asset"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="md:col-span-2">
+          <Label className="flex items-center gap-2">
+            FQDN <span className="text-xs font-normal text-muted-foreground">(primary identifier)</span>
+          </Label>
+          <Input {...bind("hostname")} placeholder="e.g. frontdesk-pc.hotel.local" className="font-medium" />
+        </div>
         {mode === "edit" && (
           <div className="md:col-span-2"><Label>Asset Tag</Label><Input {...bind("asset_tag")} /></div>
         )}
@@ -321,7 +327,6 @@ function AssetDialog({
         <div><Label>RAM</Label><Input {...bind("ram")} /></div>
         <div><Label>Storage</Label><Input {...bind("storage")} /></div>
         <div><Label>Operating System</Label><Input {...bind("operating_system")} /></div>
-        <div><Label>FQDN</Label><Input {...bind("hostname")} /></div>
         <div><Label>IP Address</Label><Input {...bind("ip_address")} /></div>
         <div><Label>MAC Address</Label><Input {...bind("mac_address")} /></div>
         <div><Label>Warranty Start</Label><Input type="date" {...bind("warranty_start")} /></div>
