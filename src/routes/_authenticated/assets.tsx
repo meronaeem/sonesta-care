@@ -128,7 +128,7 @@ function AssetsPage() {
     { key: "asset_type", label: "Type", render: (a) => <Badge variant="secondary">{labelize(a.asset_type)}</Badge> },
     { key: "manufacturer", label: "Make/Model", render: (a) => `${a.manufacturer ?? "—"} ${a.model ?? ""}`.trim() },
     { key: "serial_number", label: "Serial" },
-    { key: "hostname", label: "Hostname" },
+    { key: "hostname", label: "FQDN" },
     { key: "ip_address", label: "IP" },
     { key: "status", label: "Status", render: (a) => <Badge>{labelize(a.status)}</Badge> },
     { key: "warranty_end", label: "Warranty", render: (a) => fmtDate(a.warranty_end) },
@@ -232,7 +232,7 @@ function AssetsPage() {
               <div className="mt-4 space-y-2 text-sm">
                 <Row k="Make/Model" v={`${detail.manufacturer ?? "—"} ${detail.model ?? ""}`.trim()} />
                 <Row k="Serial" v={detail.serial_number} />
-                <Row k="Hostname" v={detail.hostname} />
+                <Row k="FQDN" v={detail.hostname} />
                 <Row k="IP address" v={detail.ip_address} />
                 <Row k="Warranty end" v={fmtDate(detail.warranty_end)} />
               </div>
@@ -321,7 +321,7 @@ function AssetDialog({
         <div><Label>RAM</Label><Input {...bind("ram")} /></div>
         <div><Label>Storage</Label><Input {...bind("storage")} /></div>
         <div><Label>Operating System</Label><Input {...bind("operating_system")} /></div>
-        <div><Label>Hostname</Label><Input {...bind("hostname")} /></div>
+        <div><Label>FQDN</Label><Input {...bind("hostname")} /></div>
         <div><Label>IP Address</Label><Input {...bind("ip_address")} /></div>
         <div><Label>MAC Address</Label><Input {...bind("mac_address")} /></div>
         <div><Label>Warranty Start</Label><Input type="date" {...bind("warranty_start")} /></div>
