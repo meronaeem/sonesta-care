@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
@@ -37,9 +37,11 @@ type Server = {
 };
 
 function ServersPage() {
-  const { isIT } = useAuth();
+  const { isIT, hasRole } = useAuth();
+  const isAdmin = hasRole("administrator");
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editRow, setEditRow] = useState<Server | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["servers"],
@@ -59,6 +61,15 @@ function ServersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const update = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      const { error } = await supabase.from("servers").update(payload as never).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["servers"] }); toast.success("Server updated"); setEditRow(null); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const columns: Column<Server>[] = [
     { key: "name", label: "Name", render: (s) => <span className="font-medium">{s.name}</span> },
     { key: "server_kind", label: "Kind", render: (s) => <Badge variant="secondary">{labelize(s.server_kind)}</Badge> },
@@ -70,6 +81,18 @@ function ServersPage() {
     { key: "purpose", label: "Purpose" },
     { key: "backup_status", label: "Backup" },
   ];
+
+  if (isAdmin) {
+    columns.push({
+      key: "_actions",
+      label: "",
+      render: (s) => (
+        <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditRow(s); }} aria-label="Edit server">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -86,26 +109,45 @@ function ServersPage() {
         )}
       </div>
       {isLoading ? <div className="text-sm text-muted-foreground">Loading…</div> : <DataTable rows={rows} columns={columns} />}
+      {isAdmin && (
+        <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+          {editRow && (
+            <ServerDialog
+              initial={editRow}
+              mode="edit"
+              onSubmit={(v) => update.mutate({ id: editRow.id, payload: v })}
+              pending={update.isPending}
+            />
+          )}
+        </Dialog>
+      )}
     </div>
   );
 }
 
-function ServerDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean }) {
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [kind, setKind] = useState("physical");
-  const [hypervisor, setHypervisor] = useState("");
+function ServerDialog({ onSubmit, pending, initial, mode = "create" }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean; initial?: Partial<Server> & Record<string, unknown>; mode?: "create" | "edit" }) {
+  const toStr = (v: unknown) => (v == null ? "" : String(v));
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    if (!initial) return {};
+    const keys = ["name","hostname","cluster","cpu","ram","storage","operating_system","ip_address","vm_count","backup_status","purpose","notes"];
+    const o: Record<string, string> = {};
+    for (const k of keys) o[k] = toStr((initial as Record<string, unknown>)[k]);
+    return o;
+  });
+  const [kind, setKind] = useState(toStr(initial?.server_kind) || "physical");
+  const [hypervisor, setHypervisor] = useState(toStr(initial?.hypervisor));
   const bind = (k: string) => ({ value: form[k] ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value })) });
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned: Record<string, unknown> = { server_kind: kind };
-    if (hypervisor) cleaned.hypervisor = hypervisor;
-    for (const [k, v] of Object.entries(form)) if (v) cleaned[k] = v;
-    if (typeof cleaned.vm_count === "string") cleaned.vm_count = parseInt(cleaned.vm_count as string, 10);
+    cleaned.hypervisor = hypervisor || null;
+    for (const [k, v] of Object.entries(form)) cleaned[k] = v === "" ? null : v;
+    if (typeof cleaned.vm_count === "string") cleaned.vm_count = cleaned.vm_count ? parseInt(cleaned.vm_count as string, 10) : null;
     onSubmit(cleaned);
   };
   return (
     <DialogContent className="max-w-2xl">
-      <DialogHeader><DialogTitle>New Server</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Server" : "New Server"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-2 gap-3">
         <div className="col-span-2"><Label>Name</Label><Input required {...bind("name")} /></div>
         <div><Label>Hostname</Label><Input {...bind("hostname")} /></div>
