@@ -150,7 +150,7 @@ function ServerDialog({ onSubmit, pending, initial, mode = "create" }: { onSubmi
       <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Server" : "New Server"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-2 gap-3">
         <div className="col-span-2"><Label>Name</Label><Input required {...bind("name")} /></div>
-        <div><Label>Hostname</Label><Input {...bind("hostname")} /></div>
+        <div className="col-span-2"><Label>FQDN</Label><Input placeholder="e.g. vm-prod-01.hotel.local" {...bind("hostname")} /></div>
         <div><Label>Kind</Label>
           <Select value={kind} onValueChange={setKind}>
             <SelectTrigger><SelectValue /></SelectTrigger>
