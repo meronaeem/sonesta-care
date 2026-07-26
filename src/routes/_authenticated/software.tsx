@@ -15,6 +15,8 @@ import { exportToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { BulkEditBar } from "@/components/bulk-edit-bar";
+import { AttachmentsPanel } from "@/components/attachments-panel";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/_authenticated/software")({
   head: () => ({ meta: [{ title: "Software & Licenses • Hotel IT Ops" }] }),
@@ -30,6 +32,8 @@ type Software = {
   seats: number | null;
   seats_used: number | null;
   expiration_date: string | null;
+  license_delivery: string | null;
+  license_key: string | null;
 };
 
 function SoftwarePage() {
