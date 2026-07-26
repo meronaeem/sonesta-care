@@ -116,7 +116,7 @@ export function AttachmentsPanel({ entityType, entityId }: { entityType: EntityT
         </div>
         <div>
           <input ref={inputRef} type="file" multiple hidden onChange={onPick} />
-          <Button size="sm" variant="outline" disabled={upload.isPending} onClick={() => inputRef.current?.click()}>
+          <Button type="button" size="sm" variant="outline" disabled={upload.isPending} onClick={() => inputRef.current?.click()}>
             {upload.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
             Upload
           </Button>
@@ -136,10 +136,10 @@ export function AttachmentsPanel({ entityType, entityId }: { entityType: EntityT
                 <div className="truncate font-medium">{r.file_name}</div>
                 <div className="text-[11px] text-muted-foreground">{fmtSize(r.size_bytes)} · {fmtDateTime(r.created_at)}</div>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => download(r)} aria-label="Download">
+              <Button type="button" size="sm" variant="ghost" onClick={() => download(r)} aria-label="Download">
                 <Download className="h-4 w-4" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => del.mutate(r)} disabled={del.isPending} aria-label="Delete">
+              <Button type="button" size="sm" variant="ghost" onClick={() => del.mutate(r)} disabled={del.isPending} aria-label="Delete">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </li>
