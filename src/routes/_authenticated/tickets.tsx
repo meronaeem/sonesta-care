@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Paperclip, X } from "lucide-react";
+import { Plus, Paperclip, X, Pencil } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
@@ -47,10 +47,12 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 function TicketsPage() {
-  const { user, isIT } = useAuth();
+  const { user, isIT, hasRole } = useAuth();
+  const isAdmin = hasRole("administrator");
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [editRow, setEditRow] = useState<Ticket | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows = [], isLoading } = useQuery({
@@ -124,6 +126,15 @@ function TicketsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const update = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      const { error } = await supabase.from("tickets").update(payload as never).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["tickets"] }); toast.success("Ticket updated"); setEditRow(null); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const columns: Column<Ticket>[] = [
     { key: "ticket_number", label: "#", render: (t) => <span className="font-mono text-xs">{t.ticket_number}</span> },
     { key: "title", label: "Title", render: (t) => <span className="font-medium">{t.title}</span> },
@@ -132,6 +143,18 @@ function TicketsPage() {
     { key: "status", label: "Status", render: (t) => <Badge variant="outline">{labelize(t.status)}</Badge> },
     { key: "created_at", label: "Created", render: (t) => <span className="text-xs text-muted-foreground">{fmtDateTime(t.created_at)}</span> },
   ];
+
+  if (isAdmin) {
+    columns.push({
+      key: "_actions",
+      label: "",
+      render: (t) => (
+        <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditRow(t); }} aria-label="Edit ticket">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    });
+  }
 
   const detail = detailId ? rows.find((r) => r.id === detailId) ?? null : null;
 
@@ -207,6 +230,18 @@ function TicketsPage() {
           )}
         </SheetContent>
       </Sheet>
+      {isAdmin && (
+        <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+          {editRow && (
+            <TicketEditDialog
+              initial={editRow}
+              assignees={itUsers}
+              onSubmit={(v) => update.mutate({ id: editRow.id, payload: v })}
+              pending={update.isPending}
+            />
+          )}
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -275,6 +310,79 @@ function TicketDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unkn
           )}
         </div>
         <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Submitting…" : "Submit ticket"}</Button></DialogFooter>
+      </form>
+    </DialogContent>
+  );
+}
+
+function TicketEditDialog({ initial, assignees, onSubmit, pending }: {
+  initial: Ticket;
+  assignees: { id: string; full_name: string | null; email: string | null }[];
+  onSubmit: (v: Record<string, unknown>) => void;
+  pending: boolean;
+}) {
+  const [title, setTitle] = useState(initial.title ?? "");
+  const [description, setDescription] = useState(initial.description ?? "");
+  const [category, setCategory] = useState(initial.category ?? "");
+  const [priority, setPriority] = useState(initial.priority ?? "medium");
+  const [status, setStatus] = useState(initial.status ?? "open");
+  const [assignee, setAssignee] = useState(initial.assignee_id ?? "__unassigned__");
+  const [resolution, setResolution] = useState(initial.resolution ?? "");
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      title,
+      description: description || null,
+      category: category || null,
+      priority,
+      status,
+      assignee_id: assignee === "__unassigned__" ? null : assignee,
+      resolution: resolution || null,
+    });
+  };
+  return (
+    <DialogContent className="max-w-2xl">
+      <DialogHeader><DialogTitle>Edit ticket <span className="font-mono text-xs ml-2">{initial.ticket_number}</span></DialogTitle></DialogHeader>
+      <form onSubmit={submit} className="space-y-3">
+        <div><Label>Title</Label><Input required value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger><SelectValue placeholder="Choose…" /></SelectTrigger>
+              <SelectContent>
+                {["Hardware", "Software", "Network", "Access", "Email", "Printer", "Phone", "Other"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Priority</Label>
+            <Select value={priority} onValueChange={setPriority}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["low", "medium", "high", "critical"].map((p) => <SelectItem key={p} value={p}>{labelize(p)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {["open","in_progress","on_hold","resolved","closed","cancelled"].map((s) => <SelectItem key={s} value={s}>{labelize(s)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div><Label>Assignee</Label>
+            <Select value={assignee} onValueChange={setAssignee}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__unassigned__">Unassigned</SelectItem>
+                {assignees.map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name ?? u.email ?? u.id}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div><Label>Description</Label><Textarea rows={4} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+        <div><Label>Resolution</Label><Textarea rows={3} value={resolution} onChange={(e) => setResolution(e.target.value)} /></div>
+        <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save changes"}</Button></DialogFooter>
       </form>
     </DialogContent>
   );

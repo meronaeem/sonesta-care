@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DataTable, type Column } from "@/components/data-table";
@@ -33,9 +33,11 @@ type Software = {
 };
 
 function SoftwarePage() {
-  const { isIT } = useAuth();
+  const { isIT, hasRole } = useAuth();
+  const isAdmin = hasRole("administrator");
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editRow, setEditRow] = useState<Software | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: rows = [], isLoading } = useQuery({
@@ -53,6 +55,15 @@ function SoftwarePage() {
       if (error) throw error;
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); toast.success("Software added"); setOpen(false); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
+      const { error } = await supabase.from("software").update(payload as never).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); toast.success("Software updated"); setEditRow(null); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -83,6 +94,18 @@ function SoftwarePage() {
       return <div className="flex items-center gap-2">{fmtDate(s.expiration_date)}{d < 60 && <Badge variant={d < 0 ? "destructive" : "secondary"}>{d < 0 ? "expired" : `${d}d`}</Badge>}</div>;
     } },
   ];
+
+  if (isAdmin) {
+    columns.push({
+      key: "_actions",
+      label: "",
+      render: (s) => (
+        <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditRow(s); }} aria-label="Edit software">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      ),
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -123,23 +146,42 @@ function SoftwarePage() {
           onSelectionChange={setSelected}
         />
       )}
+      {isAdmin && (
+        <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
+          {editRow && (
+            <SoftwareDialog
+              initial={editRow}
+              mode="edit"
+              onSubmit={(v) => update.mutate({ id: editRow.id, payload: v })}
+              pending={update.isPending}
+            />
+          )}
+        </Dialog>
+      )}
     </div>
   );
 }
 
-function SoftwareDialog({ onSubmit, pending }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean }) {
-  const [form, setForm] = useState<Record<string, string>>({});
+function SoftwareDialog({ onSubmit, pending, initial, mode = "create" }: { onSubmit: (v: Record<string, unknown>) => void; pending: boolean; initial?: Partial<Software> & Record<string, unknown>; mode?: "create" | "edit" }) {
+  const toStr = (v: unknown) => (v == null ? "" : String(v));
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    if (!initial) return {};
+    const keys = ["name","version","vendor","license_type","license_key","seats","expiration_date","support_contact","notes"];
+    const o: Record<string, string> = {};
+    for (const k of keys) o[k] = toStr((initial as Record<string, unknown>)[k]);
+    return o;
+  });
   const bind = (k: string) => ({ value: form[k] ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value })) });
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(form)) if (v) cleaned[k] = v;
-    if (typeof cleaned.seats === "string") cleaned.seats = parseInt(cleaned.seats as string, 10);
+    for (const [k, v] of Object.entries(form)) cleaned[k] = v === "" ? null : v;
+    if (typeof cleaned.seats === "string") cleaned.seats = cleaned.seats ? parseInt(cleaned.seats as string, 10) : null;
     onSubmit(cleaned);
   };
   return (
     <DialogContent className="max-w-2xl">
-      <DialogHeader><DialogTitle>Add Software</DialogTitle></DialogHeader>
+      <DialogHeader><DialogTitle>{mode === "edit" ? "Edit Software" : "Add Software"}</DialogTitle></DialogHeader>
       <form onSubmit={submit} className="grid grid-cols-2 gap-3">
         <div className="col-span-2"><Label>Name</Label><Input required {...bind("name")} /></div>
         <div><Label>Version</Label><Input {...bind("version")} /></div>
