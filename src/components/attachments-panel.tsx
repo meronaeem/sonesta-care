@@ -7,7 +7,7 @@ import { Paperclip, Upload, Trash2, Download, Loader2 } from "lucide-react";
 import { fmtDateTime } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 
-type EntityType = "asset" | "ticket" | "pm_task";
+type EntityType = "asset" | "ticket" | "pm_task" | "software";
 
 interface AttachmentRow {
   id: string;

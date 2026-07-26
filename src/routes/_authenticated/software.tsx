@@ -15,6 +15,8 @@ import { exportToXlsx } from "@/lib/export-xlsx";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { BulkEditBar } from "@/components/bulk-edit-bar";
+import { AttachmentsPanel } from "@/components/attachments-panel";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/_authenticated/software")({
   head: () => ({ meta: [{ title: "Software & Licenses • Hotel IT Ops" }] }),
@@ -30,6 +32,8 @@ type Software = {
   seats: number | null;
   seats_used: number | null;
   expiration_date: string | null;
+  license_delivery: string | null;
+  license_key: string | null;
 };
 
 function SoftwarePage() {
@@ -166,17 +170,19 @@ function SoftwareDialog({ onSubmit, pending, initial, mode = "create" }: { onSub
   const toStr = (v: unknown) => (v == null ? "" : String(v));
   const [form, setForm] = useState<Record<string, string>>(() => {
     if (!initial) return {};
-    const keys = ["name","version","vendor","license_type","license_key","seats","expiration_date","support_contact","notes"];
+    const keys = ["name","version","vendor","license_type","license_delivery","license_key","seats","expiration_date","support_contact","notes"];
     const o: Record<string, string> = {};
     for (const k of keys) o[k] = toStr((initial as Record<string, unknown>)[k]);
     return o;
   });
   const bind = (k: string) => ({ value: form[k] ?? "", onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value })) });
+  const delivery = form.license_delivery || "";
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleaned: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(form)) cleaned[k] = v === "" ? null : v;
     if (typeof cleaned.seats === "string") cleaned.seats = cleaned.seats ? parseInt(cleaned.seats as string, 10) : null;
+    if (cleaned.license_delivery === "file") cleaned.license_key = null;
     onSubmit(cleaned);
   };
   return (
@@ -187,11 +193,36 @@ function SoftwareDialog({ onSubmit, pending, initial, mode = "create" }: { onSub
         <div><Label>Version</Label><Input {...bind("version")} /></div>
         <div><Label>Vendor</Label><Input {...bind("vendor")} /></div>
         <div><Label>License Type</Label><Input {...bind("license_type")} /></div>
-        <div><Label>License Key</Label><Input {...bind("license_key")} /></div>
+        <div>
+          <Label>License Delivery</Label>
+          <RadioGroup
+            value={delivery}
+            onValueChange={(v) => setForm((f) => ({ ...f, license_delivery: v }))}
+            className="flex gap-4 mt-2"
+          >
+            <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="key" id="ld-key" /> Key</label>
+            <label className="flex items-center gap-2 text-sm"><RadioGroupItem value="file" id="ld-file" /> File</label>
+          </RadioGroup>
+        </div>
         <div><Label>Seats</Label><Input type="number" {...bind("seats")} /></div>
+        {delivery === "key" && (
+          <div className="col-span-2"><Label>License Key</Label><Input {...bind("license_key")} placeholder="Paste license key" /></div>
+        )}
         <div><Label>Expiration Date</Label><Input type="date" {...bind("expiration_date")} /></div>
         <div className="col-span-2"><Label>Support Contact</Label><Input {...bind("support_contact")} /></div>
         <div className="col-span-2"><Label>Notes</Label><Textarea {...bind("notes")} /></div>
+        {mode === "edit" && initial?.id && (
+          <div className="col-span-2 border-t pt-3 space-y-3">
+            {delivery === "file" && (
+              <div className="text-xs text-muted-foreground">Upload the license file(s) below.</div>
+            )}
+            <div className="text-xs text-muted-foreground">Also attach the license email received (for reference).</div>
+            <AttachmentsPanel entityType="software" entityId={initial.id as string} />
+          </div>
+        )}
+        {mode === "create" && (delivery === "file") && (
+          <div className="col-span-2 text-xs text-muted-foreground">Save the software first, then re-open to attach the license file and reference email.</div>
+        )}
         <DialogFooter className="col-span-2"><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save"}</Button></DialogFooter>
       </form>
     </DialogContent>

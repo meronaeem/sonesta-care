@@ -682,6 +682,7 @@ export type Database = {
           created_by: string | null
           expiration_date: string | null
           id: string
+          license_delivery: string | null
           license_key: string | null
           license_type: string | null
           name: string
@@ -698,6 +699,7 @@ export type Database = {
           created_by?: string | null
           expiration_date?: string | null
           id?: string
+          license_delivery?: string | null
           license_key?: string | null
           license_type?: string | null
           name: string
@@ -714,6 +716,7 @@ export type Database = {
           created_by?: string | null
           expiration_date?: string | null
           id?: string
+          license_delivery?: string | null
           license_key?: string | null
           license_type?: string | null
           name?: string
