@@ -124,7 +124,6 @@ function AssetsPage() {
   };
 
   const columns: Column<Asset>[] = [
-    { key: "asset_tag", label: "Tag", render: (a) => <span className="font-mono text-xs">{a.asset_tag}</span> },
     { key: "hostname", label: "FQDN", render: (a) => <span className="font-medium">{a.hostname || "—"}</span> },
     { key: "asset_type", label: "Type", render: (a) => <Badge variant="secondary">{labelize(a.asset_type)}</Badge> },
     { key: "manufacturer", label: "Make/Model", render: (a) => `${a.manufacturer ?? "—"} ${a.model ?? ""}`.trim() },
