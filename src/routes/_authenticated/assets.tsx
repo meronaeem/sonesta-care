@@ -224,7 +224,6 @@ function AssetsPage() {
             <>
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
-                  <span className="font-mono text-sm">{detail.asset_tag}</span>
                   <Badge variant="secondary">{labelize(detail.asset_type)}</Badge>
                   <Badge>{labelize(detail.status)}</Badge>
                 </SheetTitle>
