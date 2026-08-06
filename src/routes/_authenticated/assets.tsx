@@ -27,7 +27,13 @@ export const Route = createFileRoute("/_authenticated/assets")({
 });
 
 const ASSET_TYPES = ["pc", "laptop", "server", "printer", "switch", "firewall", "router", "access_point", "ups", "nas", "phone", "tablet", "tv", "pos", "scanner", "other"];
-const ASSET_STATUSES = ["in_use", "in_stock", "in_repair", "retired", "lost", "disposed"];
+const ASSET_STATUSES = ["in_use", "in_stock", "in_repair"];
+const STATUS_LABELS: Record<string, string> = {
+  in_use: "In Operation",
+  in_stock: "Spare",
+  in_repair: "Damage",
+};
+const statusLabel = (s: string | null | undefined) => (s ? STATUS_LABELS[s] ?? labelize(s) : "—");
 
 type Asset = {
   id: string;
@@ -39,6 +45,7 @@ type Asset = {
   model: string | null;
   hostname: string | null;
   ip_address: string | null;
+  location_text: string | null;
   warranty_end: string | null;
   purchase_cost: number | null;
 };
@@ -112,6 +119,7 @@ function AssetsPage() {
         model: r.model as string | undefined,
         hostname: r.hostname as string | undefined,
         ip_address: r.ip_address as string | undefined,
+        location_text: r.location_text as string | undefined,
         status: (r.status as string | undefined)?.toLowerCase() ?? "in_stock",
       }));
       const { error } = await supabase.from("assets").insert(cleaned as never);
@@ -129,7 +137,8 @@ function AssetsPage() {
     { key: "manufacturer", label: "Make/Model", render: (a) => `${a.manufacturer ?? "—"} ${a.model ?? ""}`.trim() },
     { key: "serial_number", label: "Serial" },
     { key: "ip_address", label: "IP" },
-    { key: "status", label: "Status", render: (a) => <Badge>{labelize(a.status)}</Badge> },
+    { key: "location_text", label: "Location" },
+    { key: "status", label: "Status", render: (a) => <Badge>{statusLabel(a.status)}</Badge> },
     { key: "warranty_end", label: "Warranty", render: (a) => fmtDate(a.warranty_end) },
   ];
 
@@ -190,7 +199,7 @@ function AssetsPage() {
           onClear={() => setSelected(new Set())}
           onApply={(u) => bulkUpdate.mutate(u)}
           fields={[
-            { key: "status", label: "Status", options: ASSET_STATUSES.map((s) => ({ value: s, label: labelize(s) })) },
+            { key: "status", label: "Status", options: ASSET_STATUSES.map((s) => ({ value: s, label: statusLabel(s) })) },
             { key: "asset_type", label: "Type", options: ASSET_TYPES.map((s) => ({ value: s, label: labelize(s) })) },
           ]}
         />
@@ -224,7 +233,7 @@ function AssetsPage() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2">
                   <Badge variant="secondary">{labelize(detail.asset_type)}</Badge>
-                  <Badge>{labelize(detail.status)}</Badge>
+                  <Badge>{statusLabel(detail.status)}</Badge>
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-4 space-y-2 text-sm">
@@ -232,6 +241,7 @@ function AssetsPage() {
                 <Row k="Make/Model" v={`${detail.manufacturer ?? "—"} ${detail.model ?? ""}`.trim()} />
                 <Row k="Serial" v={detail.serial_number} />
                 <Row k="IP address" v={detail.ip_address} />
+                <Row k="Location" v={detail.location_text} />
                 <Row k="Warranty end" v={fmtDate(detail.warranty_end)} />
               </div>
               <Separator className="my-4" />
@@ -315,9 +325,10 @@ function AssetDialog({
         <div><Label>Status</Label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{ASSET_STATUSES.map((t) => <SelectItem key={t} value={t}>{labelize(t)}</SelectItem>)}</SelectContent>
+            <SelectContent>{ASSET_STATUSES.map((t) => <SelectItem key={t} value={t}>{statusLabel(t)}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        <div className="md:col-span-2"><Label>Location</Label><Input {...bind("location_text")} placeholder="e.g. Lobby — Front Desk" /></div>
         <div><Label>Serial Number</Label><Input {...bind("serial_number")} /></div>
         <div><Label>Manufacturer</Label><Input {...bind("manufacturer")} /></div>
         <div><Label>Model</Label><Input {...bind("model")} /></div>

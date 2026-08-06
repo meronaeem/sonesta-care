@@ -119,6 +119,7 @@ export type Database = {
           invoice_number: string | null
           ip_address: string | null
           location_id: string | null
+          location_text: string | null
           mac_address: string | null
           manufacturer: string | null
           model: string | null
@@ -154,6 +155,7 @@ export type Database = {
           invoice_number?: string | null
           ip_address?: string | null
           location_id?: string | null
+          location_text?: string | null
           mac_address?: string | null
           manufacturer?: string | null
           model?: string | null
@@ -189,6 +191,7 @@ export type Database = {
           invoice_number?: string | null
           ip_address?: string | null
           location_id?: string | null
+          location_text?: string | null
           mac_address?: string | null
           manufacturer?: string | null
           model?: string | null
