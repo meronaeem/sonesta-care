@@ -22,6 +22,7 @@ import { Route as AuthenticatedNetworkRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated/assets'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
+import { Route as AuthenticatedBriefingsIndexRouteImport } from './routes/_authenticated/briefings.index'
 import { Route as ApiPublicHooksPmRemindersRouteImport } from './routes/api/public/hooks/pm-reminders'
 
 const AuthRoute = AuthRouteImport.update({
@@ -88,6 +89,12 @@ const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
   path: '/activity',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBriefingsIndexRoute =
+  AuthenticatedBriefingsIndexRouteImport.update({
+    id: '/briefings/',
+    path: '/briefings/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksPmRemindersRoute =
   ApiPublicHooksPmRemindersRouteImport.update({
     id: '/api/public/hooks/pm-reminders',
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/software': typeof AuthenticatedSoftwareRoute
   '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/briefings/': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -123,6 +131,7 @@ export interface FileRoutesByTo {
   '/software': typeof AuthenticatedSoftwareRoute
   '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/briefings': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRoutesById {
@@ -140,6 +149,7 @@ export interface FileRoutesById {
   '/_authenticated/software': typeof AuthenticatedSoftwareRoute
   '/_authenticated/tech': typeof AuthenticatedTechRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
+  '/_authenticated/briefings/': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
 }
 export interface FileRouteTypes {
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/software'
     | '/tech'
     | '/tickets'
+    | '/briefings/'
     | '/api/public/hooks/pm-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/software'
     | '/tech'
     | '/tickets'
+    | '/briefings'
     | '/api/public/hooks/pm-reminders'
   id:
     | '__root__'
@@ -188,6 +200,7 @@ export interface FileRouteTypes {
     | '/_authenticated/software'
     | '/_authenticated/tech'
     | '/_authenticated/tickets'
+    | '/_authenticated/briefings/'
     | '/api/public/hooks/pm-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -291,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedActivityRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/briefings/': {
+      id: '/_authenticated/briefings/'
+      path: '/briefings'
+      fullPath: '/briefings/'
+      preLoaderRoute: typeof AuthenticatedBriefingsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/pm-reminders': {
       id: '/api/public/hooks/pm-reminders'
       path: '/api/public/hooks/pm-reminders'
@@ -312,6 +332,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSoftwareRoute: typeof AuthenticatedSoftwareRoute
   AuthenticatedTechRoute: typeof AuthenticatedTechRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
+  AuthenticatedBriefingsIndexRoute: typeof AuthenticatedBriefingsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -325,6 +346,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSoftwareRoute: AuthenticatedSoftwareRoute,
   AuthenticatedTechRoute: AuthenticatedTechRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
+  AuthenticatedBriefingsIndexRoute: AuthenticatedBriefingsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
