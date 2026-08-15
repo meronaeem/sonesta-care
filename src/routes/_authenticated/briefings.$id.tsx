@@ -286,7 +286,7 @@ function BriefingDetail() {
     });
 
   const exportExcel = () => {
-    const sheet = rows.map((a) => ({
+    const sheet: Record<string, unknown>[] = rows.map((a) => ({
       Briefing: String(b?.briefing_number ?? ""),
       "Briefing Title": String(b?.title ?? ""),
       Date: String(b?.briefing_date ?? ""),
