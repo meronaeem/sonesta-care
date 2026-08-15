@@ -15,7 +15,7 @@ import { Plus, NotebookPen, FileDown, FileSpreadsheet, CalendarDays, ListChecks,
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { fmtDate, fmtDateTime, labelize } from "@/lib/format";
+import { fmtDate, labelize } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { exportToXlsx } from "@/lib/export-xlsx";
 import { generateBriefingActionsReport } from "@/lib/pdf-reports";
