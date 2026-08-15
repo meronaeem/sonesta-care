@@ -445,15 +445,23 @@ function BriefingDetail() {
         </Dialog>
       )}
 
-      {apDialog && (
-        <Dialog open onOpenChange={(o) => !o && setApDialog(null)}>
-          <ActionPointDialog
-            initial={apDialog.row}
-            people={people}
-            departments={departments}
-            pending={saveAction.isPending}
-            onSubmit={(payload) => saveAction.mutate({ payload, editId: apDialog.row?.id })}
-          />
+      {viewFor && (
+        <Dialog open onOpenChange={(o) => !o && setViewFor(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Point #{viewFor.point_number ?? "—"} · {viewFor.action_number}</DialogTitle></DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div><div className="font-medium">Discussion point</div><p className="whitespace-pre-wrap text-muted-foreground">{viewFor.description}</p></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><div className="font-medium">Action by</div><p className="text-muted-foreground">{deptOf(viewFor.department_id)} · {nameOf(viewFor.responsible_id)}</p></div>
+                <div><div className="font-medium">Target date</div><p className="text-muted-foreground">{fmtDate(viewFor.due_at)}</p></div>
+                <div><div className="font-medium">Status</div><Badge className={STATUS_BADGE[effectiveStatus(viewFor.status, viewFor.due_at)]}>{labelize(effectiveStatus(viewFor.status, viewFor.due_at))}</Badge></div>
+                <div><div className="font-medium">Priority</div><Badge className={PRIORITY_BADGE[viewFor.priority]}>{labelize(viewFor.priority)}</Badge></div>
+              </div>
+              {viewFor.comments && <div><div className="font-medium">Action / notes</div><p className="whitespace-pre-wrap text-muted-foreground">{viewFor.comments}</p></div>}
+              {viewFor.completed_at && <div><div className="font-medium">Completed</div><p className="text-muted-foreground">{fmtDateTime(viewFor.completed_at)} — {viewFor.completion_notes ?? "—"}</p></div>}
+              <div><div className="font-medium mb-1">Attachments</div><AttachmentsPanel entityType="action_point" entityId={viewFor.id} /></div>
+            </div>
+          </DialogContent>
         </Dialog>
       )}
 
