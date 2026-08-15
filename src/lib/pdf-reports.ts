@@ -293,6 +293,19 @@ export interface BriefingPdfInput {
   general_notes: string | null;
   discussion_points: string | null;
   actions: BriefingActionRow[];
+  rooms?: BriefingRoomsPdf | null;
+}
+
+export interface BriefingRoomsPdf {
+  occupancy_today: number;
+  occupancy_rate_today: number;
+  breakfast_pax_tomorrow: number;
+  duty_manager: string;
+  vip0_rooms: number;
+  vip1_rooms: number;
+  vip2_rooms: number;
+  vip3_rooms: number;
+  occupancy_mtd: number;
 }
 
 export function generateBriefingReport(b: BriefingPdfInput) {
@@ -324,6 +337,26 @@ export function generateBriefingReport(b: BriefingPdfInput) {
   };
   if (b.general_notes) block("General notes", b.general_notes);
   if (b.discussion_points) block("Discussion summary", b.discussion_points);
+  if (b.rooms) {
+    const r = b.rooms;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
+    doc.text("Rooms", 14, y);
+    autoTable(doc, {
+      startY: y + 3,
+      theme: "plain",
+      styles: { fontSize: 9, cellPadding: 1.5 },
+      columnStyles: { 0: { fontStyle: "bold", textColor: [71, 85, 105], cellWidth: 60 } },
+      body: [
+        ["Total Occupancy Today", `${r.occupancy_today} rooms (excluding House Use & Complimentary)`],
+        ["Total Occupancy Rate", `${Number(r.occupancy_rate_today).toFixed(2)} %`],
+        ["Tomorrow Breakfast", `${r.breakfast_pax_tomorrow} pax`],
+        ["Duty Manager Today", r.duty_manager],
+        ["VIP0 / VIP1 / VIP2 / VIP3", `${r.vip0_rooms} / ${r.vip1_rooms} / ${r.vip2_rooms} / ${r.vip3_rooms} rooms`],
+        ["Occupancy MTD", `${Number(r.occupancy_mtd).toFixed(2)} %`],
+      ],
+    });
+    y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? y) + 8;
+  }
   autoTable(doc, {
     startY: y,
     head: [["#", "Discussion Point", "Dept", "Employee", "Priority", "Target Date", "Status", "Completed", "Notes", "IT Task"]],
