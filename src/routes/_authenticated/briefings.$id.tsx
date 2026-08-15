@@ -496,137 +496,131 @@ function BriefingDetail() {
   );
 }
 
-function ActionPointDialog({
-  initial, people, departments, pending, onSubmit,
+function PointForm({
+  initial, pointNumber, people, departments, pending, onSubmit, onCancel,
 }: {
   initial?: ActionPoint;
+  pointNumber: number;
   people: { id: string; full_name: string | null; email: string | null; department_id: string | null }[];
   departments: { id: string; name: string }[];
   pending: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
+  onCancel: () => void;
 }) {
   const [dept, setDept] = useState(initial?.department_id ?? "");
   const [resp, setResp] = useState(initial?.responsible_id ?? "");
   const [priority, setPriority] = useState(initial?.priority ?? "medium");
   const [status, setStatus] = useState(initial?.status ?? "open");
-  const [allowed, setAllowed] = useState(initial?.allowed_time ?? "1d");
-  const [custom, setCustom] = useState(initial?.custom_minutes ? String(initial.custom_minutes) : "");
-  const [assigned, setAssigned] = useState(toLocalInput(initial?.assigned_at ?? new Date().toISOString()));
-  const [due, setDue] = useState(toLocalInput(initial?.due_at ?? computeDue(new Date().toISOString(), "1d")));
-  const [manualDue, setManualDue] = useState(false);
+  const [target, setTarget] = useState(dateFromDue(initial?.due_at) || new Date().toISOString().slice(0, 10));
   const [reminder, setReminder] = useState(String(initial?.reminder_minutes_before ?? 60));
   const [showAll, setShowAll] = useState(false);
-
-  const recalc = (a: string, opt: string, cm: string) => {
-    if (manualDue || !a) return;
-    setDue(toLocalInput(computeDue(fromLocalInput(a), opt, cm ? Number(cm) : null)));
-  };
 
   const candidates = showAll || !dept ? people : people.filter((p) => p.department_id === dept);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const description = String(f.get("description") ?? "").trim();
+    if (!description) return toast.error("Discussion point is required");
+    if (!target) return toast.error("Target date is required");
     onSubmit({
-      description: String(f.get("description") ?? "").trim(),
+      description,
       department_id: dept || null,
       responsible_id: resp || null,
       priority,
       status,
-      assigned_at: fromLocalInput(assigned),
-      allowed_time: allowed,
-      custom_minutes: allowed === "custom" && custom ? Number(custom) : null,
-      due_at: fromLocalInput(due),
+      assigned_at: initial?.assigned_at ?? new Date().toISOString(),
+      allowed_time: initial?.allowed_time ?? "1d",
+      custom_minutes: null,
+      due_at: dueFromDate(target),
       reminder_minutes_before: Number(reminder),
       comments: String(f.get("comments") ?? "").trim() || null,
     });
   };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader><DialogTitle>{initial ? `Edit ${initial.action_number}` : "New action point"}</DialogTitle></DialogHeader>
-      <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="rounded-lg border bg-muted/30 p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">Point #{pointNumber}</h3>
+        {initial && <span className="font-mono text-xs text-muted-foreground">{initial.action_number}</span>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="description">Discussion point</Label>
+        <Textarea id="description" name="description" required rows={2} defaultValue={initial?.description ?? ""} placeholder="Enter discussion point" />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" required rows={3} defaultValue={initial?.description ?? ""} placeholder="What needs to be done?" />
+          <Label>Action by — department</Label>
+          <Select value={dept} onValueChange={(v) => { setDept(v); setResp(""); }}>
+            <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+            <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Related department</Label>
-            <Select value={dept} onValueChange={(v) => { setDept(v); setResp(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-              <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
-            </Select>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label>Action by — employee</Label>
+            <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setShowAll((s) => !s)}>
+              {showAll ? "Filter by department" : "Show all users"}
+            </button>
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Responsible person</Label>
-              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setShowAll((s) => !s)}>
-                {showAll ? "Filter by department" : "Show all users"}
-              </button>
-            </div>
-            <Select value={resp} onValueChange={setResp}>
-              <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
-              <SelectContent>
-                {candidates.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No users in this department</div>}
-                {candidates.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={resp} onValueChange={setResp}>
+            <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+            <SelectContent>
+              {candidates.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No users in this department</div>}
+              {candidates.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label>Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{ACTION_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Reminder</Label>
-            <Select value={reminder} onValueChange={setReminder}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{REMINDER_OPTIONS.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="target">Target date</Label>
+          <Input id="target" type="date" required value={target} onChange={(e) => setTarget(e.target.value)} />
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="assigned">Assigned date/time</Label>
-            <Input id="assigned" type="datetime-local" value={assigned} onChange={(e) => { setAssigned(e.target.value); recalc(e.target.value, allowed, custom); }} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Allowed completion time</Label>
-            <Select value={allowed} onValueChange={(v) => { setAllowed(v); recalc(assigned, v, custom); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{ALLOWED_TIMES.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
-            </Select>
-            {allowed === "custom" && (
-              <Input className="mt-2" type="number" min={1} placeholder="Minutes" value={custom}
-                onChange={(e) => { setCustom(e.target.value); recalc(assigned, "custom", e.target.value); }} />
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="due">Due date/time</Label>
-              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setManualDue((m) => !m)}>
-                {manualDue ? "Auto-calculate" : "Override"}
-              </button>
-            </div>
-            <Input id="due" type="datetime-local" value={due} readOnly={!manualDue} onChange={(e) => setDue(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">{manualDue ? "Manual deadline" : "Assigned time + allowed time"}</p>
-          </div>
+        <div className="space-y-1.5">
+          <Label>Status</Label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{ACTION_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <div className="space-y-1.5"><Label htmlFor="comments">Comments</Label><Textarea id="comments" name="comments" rows={2} defaultValue={initial?.comments ?? ""} /></div>
-        <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save action point"}</Button></DialogFooter>
-      </form>
-    </DialogContent>
+        <div className="space-y-1.5">
+          <Label>Priority</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Reminder</Label>
+          <Select value={reminder} onValueChange={setReminder}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{REMINDER_OPTIONS.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="comments">Action / notes</Label>
+        <Textarea id="comments" name="comments" rows={2} defaultValue={initial?.comments ?? ""} placeholder="Enter notes (optional)" />
+      </div>
+
+      {initial ? (
+        <div className="space-y-1.5">
+          <Label>Attachment</Label>
+          <AttachmentsPanel entityType="action_point" entityId={initial.id} />
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Save the point first, then use the paperclip action to attach files.</p>
+      )}
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Point"}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+      </div>
+    </form>
   );
 }
