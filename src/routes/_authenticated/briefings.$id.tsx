@@ -21,6 +21,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { AttachmentsPanel } from "@/components/attachments-panel";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { generateBriefingReport } from "@/lib/pdf-reports";
+import { exportToXlsx } from "@/lib/export-xlsx";
+import { BriefingRoomsSection, useBriefingRooms, pct } from "@/components/briefing-rooms";
 import { notifyActionPoint } from "@/lib/briefings.functions";
 import { BriefingDialog } from "./briefings.index";
 import {
@@ -123,6 +125,8 @@ function BriefingDetail() {
       return (data ?? []).map((r) => (r as { department_id: string }).department_id);
     },
   });
+
+  const { data: rooms = null } = useBriefingRooms(id);
 
   const nameOf = (uid: string | null) => people.find((p) => p.id === uid)?.full_name ?? people.find((p) => p.id === uid)?.email ?? "—";
   const deptOf = (did: string | null) => departments.find((d) => d.id === did)?.name ?? "—";
@@ -268,6 +272,9 @@ function BriefingDetail() {
       departments: briefDepts.map(deptOf),
       general_notes: b?.general_notes ?? null,
       discussion_points: b?.discussion_points ?? null,
+      rooms: rooms
+        ? { ...rooms, duty_manager: nameOf(rooms.duty_manager_id) }
+        : null,
       actions: rows.map((a) => ({
         point: a.point_number ? `#${a.point_number}` : a.action_number,
         action_number: a.action_number, description: a.description,
@@ -278,12 +285,42 @@ function BriefingDetail() {
       })),
     });
 
+  const exportExcel = () => {
+    const sheet = rows.map((a) => ({
+      Briefing: String(b?.briefing_number ?? ""),
+      "Briefing Title": String(b?.title ?? ""),
+      Date: String(b?.briefing_date ?? ""),
+      "Point #": a.point_number ?? "",
+      "Action Number": a.action_number,
+      "Discussion Point": a.description,
+      Department: deptOf(a.department_id),
+      Employee: nameOf(a.responsible_id),
+      Priority: labelize(a.priority),
+      "Target Date": a.due_at,
+      Status: labelize(a.live),
+      Completed: a.completed_at ?? "",
+      Notes: a.comments ?? "",
+      "IT Task": ticketFor(a.id)?.ticket_number ?? "",
+      "Occupancy Today (rooms)": rooms?.occupancy_today ?? "",
+      "Occupancy Rate (%)": rooms ? pct(rooms.occupancy_rate_today) : "",
+      "Tomorrow Breakfast (pax)": rooms?.breakfast_pax_tomorrow ?? "",
+      "Duty Manager": rooms ? nameOf(rooms.duty_manager_id) : "",
+      VIP0: rooms?.vip0_rooms ?? "",
+      VIP1: rooms?.vip1_rooms ?? "",
+      VIP2: rooms?.vip2_rooms ?? "",
+      VIP3: rooms?.vip3_rooms ?? "",
+      "Occupancy MTD (%)": rooms ? pct(rooms.occupancy_mtd) : "",
+    }));
+    exportToXlsx(sheet.length ? sheet : [{ Briefing: String(b?.briefing_number ?? "") }], `briefing-${b?.briefing_number ?? id}`, "Briefing");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" size="sm" asChild><Link to="/briefings"><ArrowLeft className="h-4 w-4 mr-2" />All briefings</Link></Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportPdf}><FileDown className="h-4 w-4 mr-2" />Export PDF</Button>
+          <Button variant="outline" size="sm" onClick={exportExcel}><FileDown className="h-4 w-4 mr-2" />Export Excel</Button>
           <Button variant="outline" size="sm" onClick={() => setAttachFor({ type: "briefing", id, label: String(b?.title ?? "Briefing") })}>
             <Paperclip className="h-4 w-4 mr-2" />Attachments
           </Button>
