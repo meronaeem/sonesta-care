@@ -320,45 +320,73 @@ function BriefingDetail() {
             </div>
           )}
           {b?.general_notes && (<><Separator /><div><div className="font-medium mb-1">General notes</div><p className="whitespace-pre-wrap text-muted-foreground">{b.general_notes}</p></div></>)}
-          {b?.discussion_points && (<><Separator /><div><div className="font-medium mb-1">Discussion points</div><p className="whitespace-pre-wrap text-muted-foreground">{b.discussion_points}</p></div></>)}
+          {b?.discussion_points && (<><Separator /><div><div className="font-medium mb-1">Discussion summary</div><p className="whitespace-pre-wrap text-muted-foreground">{b.discussion_points}</p></div></>)}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>Action points</CardTitle>
+            <CardTitle>Discussion &amp; Action Points</CardTitle>
             <CardDescription>{rows.length} recorded · {rows.filter((r) => r.live === "overdue").length} overdue</CardDescription>
           </div>
-          {canEdit && <Button size="sm" onClick={() => setApDialog({ mode: "create" })}><Plus className="h-4 w-4 mr-2" />Add Action Point</Button>}
+          {canEdit && !adding && <Button size="sm" onClick={() => { setEditingId(null); setAdding(true); }}><Plus className="h-4 w-4 mr-2" />Add Point</Button>}
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="space-y-4">
+          {adding && (
+            <PointForm
+              pointNumber={(rows.reduce((m, r) => Math.max(m, r.point_number ?? 0), 0) || 0) + 1}
+              people={people}
+              departments={departments}
+              pending={saveAction.isPending}
+              onCancel={() => setAdding(false)}
+              onSubmit={(payload) => saveAction.mutate({ payload })}
+            />
+          )}
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr className="text-left">
-                {["Action Point", "Department", "Responsible", "Priority", "Allowed Time", "Due Date/Time", "Status", "IT Task", "Actions"].map((h) => (
+                {["#", "Discussion Point", "Action By", "Target Date", "Priority", "Status", "Related Task", "Actions"].map((h) => (
                   <th key={h} className="px-2 py-2 font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">No action points yet.</td></tr>}
+              {rows.length === 0 && !adding && <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No discussion points yet — click “Add Point”.</td></tr>}
               {rows.map((a) => {
                 const t = ticketFor(a.id);
                 const resolved = t && ["resolved", "closed"].includes(t.status);
+                if (editingId === a.id) {
+                  return (
+                    <tr key={a.id}><td colSpan={8} className="py-3">
+                      <PointForm
+                        initial={a}
+                        pointNumber={a.point_number ?? 0}
+                        people={people}
+                        departments={departments}
+                        pending={saveAction.isPending}
+                        onCancel={() => setEditingId(null)}
+                        onSubmit={(payload) => saveAction.mutate({ payload, editId: a.id })}
+                      />
+                    </td></tr>
+                  );
+                }
                 return (
                   <tr key={a.id} className="border-b last:border-0 align-top">
+                    <td className="px-2 py-2 font-semibold tabular-nums">{a.point_number ?? "—"}</td>
                     <td className="px-2 py-2">
-                      <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                       <div className="max-w-sm">{a.description}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                       {a.comments && <div className="text-xs text-muted-foreground mt-1">💬 {a.comments}</div>}
                       {a.completion_notes && <div className="text-xs text-emerald-600 mt-1">✓ {a.completion_notes}</div>}
                     </td>
-                    <td className="px-2 py-2">{deptOf(a.department_id)}</td>
-                    <td className="px-2 py-2">{nameOf(a.responsible_id)}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <div>{deptOf(a.department_id)}</div>
+                      <div className="text-xs text-muted-foreground">{nameOf(a.responsible_id)}</div>
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap">{fmtDate(a.due_at)}</td>
                     <td className="px-2 py-2"><Badge className={PRIORITY_BADGE[a.priority]}>{labelize(a.priority)}</Badge></td>
-                    <td className="px-2 py-2 whitespace-nowrap">{allowedLabel(a.allowed_time, a.custom_minutes)}</td>
-                    <td className="px-2 py-2 whitespace-nowrap">{fmtDateTime(a.due_at)}</td>
                     <td className="px-2 py-2"><Badge className={STATUS_BADGE[a.live]}>{labelize(a.live)}</Badge></td>
                     <td className="px-2 py-2 whitespace-nowrap">
                       {t ? (
@@ -381,8 +409,9 @@ function BriefingDetail() {
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" aria-label="View" onClick={() => setViewFor(a)}><Eye className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label="Attachments" onClick={() => setAttachFor({ type: "action_point", id: a.id, label: a.action_number })}><Paperclip className="h-4 w-4" /></Button>
-                        {canEdit && <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => setApDialog({ mode: "edit", row: a })}><Pencil className="h-4 w-4" /></Button>}
+                        {canEdit && <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => { setAdding(false); setEditingId(a.id); }}><Pencil className="h-4 w-4" /></Button>}
                         {a.live !== "completed" && (isIT || a.responsible_id === user?.id || canEdit) && (
                           <Button size="sm" variant="ghost" aria-label="Mark completed" onClick={() => setCompleteFor(a)}><CheckCircle2 className="h-4 w-4 text-emerald-600" /></Button>
                         )}
@@ -394,6 +423,7 @@ function BriefingDetail() {
               })}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 
