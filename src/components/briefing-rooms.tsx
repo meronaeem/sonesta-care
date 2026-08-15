@@ -101,7 +101,7 @@ export function BriefingRoomsSection({
         ) : (
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label="Total Occupancy Today" value={`${rooms.occupancy_today} rooms`} hint="excluding House Use &amp; Complimentary" />
+              <Stat label="Total Occupancy Today" value={`${rooms.occupancy_today} rooms`} hint="excluding House Use & Complimentary" />
               <Stat label="Total Occupancy Rate" value={`${pct(rooms.occupancy_rate_today)} %`} />
               <Stat label="Tomorrow Breakfast" value={`${rooms.breakfast_pax_tomorrow} pax`} />
               <Stat label="Duty Manager Today" value={nameOf(rooms.duty_manager_id)} />
