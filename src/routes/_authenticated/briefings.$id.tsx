@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Plus, Pencil, Trash2, Ticket as TicketIcon, ExternalLink, CheckCircle2,
-  Paperclip, FileDown, MapPin, Clock, User as UserIcon, Users,
+  Paperclip, FileDown, MapPin, Clock, User as UserIcon, Users, Eye,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -24,8 +24,8 @@ import { generateBriefingReport } from "@/lib/pdf-reports";
 import { notifyActionPoint } from "@/lib/briefings.functions";
 import { BriefingDialog } from "./briefings.index";
 import {
-  ALLOWED_TIMES, ACTION_STATUSES, PRIORITIES, REMINDER_OPTIONS, STATUS_BADGE, PRIORITY_BADGE,
-  allowedLabel, computeDue, effectiveStatus, fromLocalInput, toLocalInput,
+  ACTION_STATUSES, PRIORITIES, REMINDER_OPTIONS, STATUS_BADGE, PRIORITY_BADGE,
+  allowedLabel, dateFromDue, dueFromDate, effectiveStatus,
 } from "@/lib/briefings";
 
 export const Route = createFileRoute("/_authenticated/briefings/$id")({
@@ -269,10 +269,12 @@ function BriefingDetail() {
       general_notes: b?.general_notes ?? null,
       discussion_points: b?.discussion_points ?? null,
       actions: rows.map((a) => ({
+        point: a.point_number ? `#${a.point_number}` : a.action_number,
         action_number: a.action_number, description: a.description,
         department: deptOf(a.department_id), responsible: nameOf(a.responsible_id),
         priority: a.priority, allowed: allowedLabel(a.allowed_time, a.custom_minutes),
         due_at: a.due_at, status: a.live, ticket: ticketFor(a.id)?.ticket_number ?? "—",
+        completed_at: a.completed_at, notes: a.comments,
       })),
     });
 
