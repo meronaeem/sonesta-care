@@ -473,7 +473,6 @@ export function BriefingDialog({
         meeting_type: meetingType,
         organizer_id: organizer || null,
         general_notes: val("general_notes"),
-        discussion_points: val("discussion_points"),
       },
       participants,
       depts,
@@ -541,8 +540,9 @@ export function BriefingDialog({
         </div>
         <div className="space-y-1.5"><Label htmlFor="general_notes">General notes</Label>
           <Textarea id="general_notes" name="general_notes" rows={3} defaultValue={String(b.general_notes ?? "")} /></div>
-        <div className="space-y-1.5"><Label htmlFor="discussion_points">Discussion points</Label>
-          <Textarea id="discussion_points" name="discussion_points" rows={3} defaultValue={String(b.discussion_points ?? "")} /></div>
+        <p className="text-xs text-muted-foreground">
+          Discussion &amp; action points are added one by one inside the briefing after it is saved.
+        </p>
         <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save briefing"}</Button></DialogFooter>
       </form>
     </DialogContent>
