@@ -17,7 +17,7 @@ export const notifyActionPoint = createServerFn({ method: "POST" })
       .eq("id", data.actionPointId)
       .maybeSingle();
     const row = ap as unknown as {
-      action_number: string; description: string; due_at: string; priority: string; status: string;
+      id: string; action_number: string; description: string; due_at: string; priority: string; status: string;
       responsible_id: string | null; briefing_id: string;
     } | null;
     if (!row?.responsible_id) return { sent: false, reason: "no recipient" };
