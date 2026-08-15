@@ -442,6 +442,68 @@ export type Database = {
           },
         ]
       }
+      briefing_rooms: {
+        Row: {
+          breakfast_pax_tomorrow: number
+          briefing_id: string
+          created_at: string
+          created_by: string | null
+          duty_manager_id: string | null
+          id: string
+          occupancy_mtd: number
+          occupancy_rate_today: number
+          occupancy_today: number
+          updated_at: string
+          updated_by: string | null
+          vip0_rooms: number
+          vip1_rooms: number
+          vip2_rooms: number
+          vip3_rooms: number
+        }
+        Insert: {
+          breakfast_pax_tomorrow?: number
+          briefing_id: string
+          created_at?: string
+          created_by?: string | null
+          duty_manager_id?: string | null
+          id?: string
+          occupancy_mtd?: number
+          occupancy_rate_today?: number
+          occupancy_today?: number
+          updated_at?: string
+          updated_by?: string | null
+          vip0_rooms?: number
+          vip1_rooms?: number
+          vip2_rooms?: number
+          vip3_rooms?: number
+        }
+        Update: {
+          breakfast_pax_tomorrow?: number
+          briefing_id?: string
+          created_at?: string
+          created_by?: string | null
+          duty_manager_id?: string | null
+          id?: string
+          occupancy_mtd?: number
+          occupancy_rate_today?: number
+          occupancy_today?: number
+          updated_at?: string
+          updated_by?: string | null
+          vip0_rooms?: number
+          vip1_rooms?: number
+          vip2_rooms?: number
+          vip3_rooms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_rooms_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: true
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       briefings: {
         Row: {
           briefing_date: string
