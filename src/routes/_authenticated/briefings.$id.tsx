@@ -46,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/briefings/$id")({
 
 interface ActionPoint {
   id: string; action_number: string; briefing_id: string; description: string;
+  point_number: number | null;
   department_id: string | null; responsible_id: string | null; priority: string;
   assigned_at: string; allowed_time: string; custom_minutes: number | null; due_at: string;
   status: string; comments: string | null; completed_at: string | null; completion_notes: string | null;
@@ -59,7 +60,9 @@ function BriefingDetail() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [editBriefing, setEditBriefing] = useState(false);
-  const [apDialog, setApDialog] = useState<{ mode: "create" | "edit"; row?: ActionPoint } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewFor, setViewFor] = useState<ActionPoint | null>(null);
   const [attachFor, setAttachFor] = useState<{ type: "briefing" | "action_point"; id: string; label: string } | null>(null);
   const [completeFor, setCompleteFor] = useState<ActionPoint | null>(null);
 
@@ -75,7 +78,7 @@ function BriefingDetail() {
   const { data: actions = [] } = useQuery({
     queryKey: ["action_points", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("briefing_action_points").select("*").eq("briefing_id", id).order("created_at");
+      const { data, error } = await supabase.from("briefing_action_points").select("*").eq("briefing_id", id).order("point_number", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as unknown as ActionPoint[];
     },
@@ -169,8 +172,9 @@ function BriefingDetail() {
     },
     onSuccess: (apId, vars) => {
       qc.invalidateQueries({ queryKey: ["action_points"] });
-      toast.success(vars.editId ? "Action point updated" : "Action point added");
-      setApDialog(null);
+      toast.success(vars.editId ? "Point updated" : "Point added");
+      setAdding(false);
+      setEditingId(null);
       if (!vars.editId) notifyActionPoint({ data: { actionPointId: apId, kind: "assigned" } }).catch(() => {});
     },
     onError: (e: Error) => toast.error(e.message),
