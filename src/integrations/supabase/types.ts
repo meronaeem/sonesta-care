@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_point_reminders_sent: {
+        Row: {
+          action_point_id: string
+          error: string | null
+          id: string
+          recipient_email: string
+          reminder_type: string
+          sent_at: string
+          success: boolean
+        }
+        Insert: {
+          action_point_id: string
+          error?: string | null
+          id?: string
+          recipient_email: string
+          reminder_type: string
+          sent_at?: string
+          success?: boolean
+        }
+        Update: {
+          action_point_id?: string
+          error?: string | null
+          id?: string
+          recipient_email?: string
+          reminder_type?: string
+          sent_at?: string
+          success?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_point_reminders_sent_action_point_id_fkey"
+            columns: ["action_point_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_action_points"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_log: {
         Row: {
           action: string
@@ -261,6 +299,194 @@ export type Database = {
           size_bytes?: number | null
           storage_path?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      briefing_action_points: {
+        Row: {
+          action_number: string
+          allowed_time: Database["public"]["Enums"]["allowed_time_option"]
+          assigned_at: string
+          briefing_id: string
+          comments: string | null
+          completed_at: string | null
+          completed_by: string | null
+          completion_notes: string | null
+          created_at: string
+          created_by: string | null
+          custom_minutes: number | null
+          department_id: string | null
+          description: string
+          due_at: string
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          reminder_minutes_before: number
+          responsible_id: string | null
+          status: Database["public"]["Enums"]["action_status"]
+          updated_at: string
+        }
+        Insert: {
+          action_number?: string
+          allowed_time?: Database["public"]["Enums"]["allowed_time_option"]
+          assigned_at?: string
+          briefing_id: string
+          comments?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_minutes?: number | null
+          department_id?: string | null
+          description: string
+          due_at: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          reminder_minutes_before?: number
+          responsible_id?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Update: {
+          action_number?: string
+          allowed_time?: Database["public"]["Enums"]["allowed_time_option"]
+          assigned_at?: string
+          briefing_id?: string
+          comments?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_minutes?: number | null
+          department_id?: string | null
+          description?: string
+          due_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          reminder_minutes_before?: number
+          responsible_id?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_action_points_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_action_points_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_departments: {
+        Row: {
+          briefing_id: string
+          department_id: string
+        }
+        Insert: {
+          briefing_id: string
+          department_id: string
+        }
+        Update: {
+          briefing_id?: string
+          department_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_departments_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefing_participants: {
+        Row: {
+          briefing_id: string
+          user_id: string
+        }
+        Insert: {
+          briefing_id: string
+          user_id: string
+        }
+        Update: {
+          briefing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_participants_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      briefings: {
+        Row: {
+          briefing_date: string
+          briefing_number: string
+          created_at: string
+          created_by: string | null
+          discussion_points: string | null
+          end_time: string | null
+          general_notes: string | null
+          id: string
+          location: string | null
+          meeting_type: Database["public"]["Enums"]["briefing_type"]
+          organizer_id: string | null
+          start_time: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          briefing_date?: string
+          briefing_number?: string
+          created_at?: string
+          created_by?: string | null
+          discussion_points?: string | null
+          end_time?: string | null
+          general_notes?: string | null
+          id?: string
+          location?: string | null
+          meeting_type?: Database["public"]["Enums"]["briefing_type"]
+          organizer_id?: string | null
+          start_time?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          briefing_date?: string
+          briefing_number?: string
+          created_at?: string
+          created_by?: string | null
+          discussion_points?: string | null
+          end_time?: string | null
+          general_notes?: string | null
+          id?: string
+          location?: string | null
+          meeting_type?: Database["public"]["Enums"]["briefing_type"]
+          organizer_id?: string | null
+          start_time?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -770,6 +996,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          action_point_id: string | null
           asset_id: string | null
           assignee_id: string | null
           category: string | null
@@ -788,6 +1015,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          action_point_id?: string | null
           asset_id?: string | null
           assignee_id?: string | null
           category?: string | null
@@ -806,6 +1034,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          action_point_id?: string | null
           asset_id?: string | null
           assignee_id?: string | null
           category?: string | null
@@ -824,6 +1053,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_action_point_id_fkey"
+            columns: ["action_point_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_action_points"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_asset_id_fkey"
             columns: ["asset_id"]
@@ -866,6 +1102,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_see_briefing: { Args: { _briefing_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -885,6 +1122,24 @@ export type Database = {
       }
     }
     Enums: {
+      action_status:
+        | "open"
+        | "in_progress"
+        | "waiting"
+        | "completed"
+        | "overdue"
+        | "cancelled"
+      allowed_time_option:
+        | "30m"
+        | "1h"
+        | "2h"
+        | "4h"
+        | "8h"
+        | "1d"
+        | "2d"
+        | "3d"
+        | "1w"
+        | "custom"
       app_role:
         | "administrator"
         | "it_manager"
@@ -916,6 +1171,14 @@ export type Database = {
         | "tv"
         | "pos"
         | "scanner"
+        | "other"
+      briefing_type:
+        | "daily_briefing"
+        | "management_meeting"
+        | "department_meeting"
+        | "it_meeting"
+        | "emergency_meeting"
+        | "followup_meeting"
         | "other"
       pm_frequency:
         | "weekly"
@@ -1061,6 +1324,26 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_status: [
+        "open",
+        "in_progress",
+        "waiting",
+        "completed",
+        "overdue",
+        "cancelled",
+      ],
+      allowed_time_option: [
+        "30m",
+        "1h",
+        "2h",
+        "4h",
+        "8h",
+        "1d",
+        "2d",
+        "3d",
+        "1w",
+        "custom",
+      ],
       app_role: [
         "administrator",
         "it_manager",
@@ -1094,6 +1377,15 @@ export const Constants = {
         "tv",
         "pos",
         "scanner",
+        "other",
+      ],
+      briefing_type: [
+        "daily_briefing",
+        "management_meeting",
+        "department_meeting",
+        "it_meeting",
+        "emergency_meeting",
+        "followup_meeting",
         "other",
       ],
       pm_frequency: [

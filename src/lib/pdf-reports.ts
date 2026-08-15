@@ -243,3 +243,87 @@ export function generatePmComplianceReport(rows: PmComplianceRow[], from: string
   footer(doc);
   doc.save(`pm-compliance-${from}-to-${to}.pdf`);
 }
+export interface BriefingActionRow {
+  briefing?: string;
+  action_number: string;
+  description: string;
+  department: string;
+  responsible: string;
+  priority: string;
+  allowed: string;
+  due_at: string;
+  status: string;
+  ticket?: string;
+}
+
+export function generateBriefingActionsReport(rows: BriefingActionRow[], subtitle?: string) {
+  const doc = new jsPDF({ orientation: "landscape" });
+  header(doc, "Briefing Action Points", subtitle ?? `${rows.length} action points`);
+  autoTable(doc, {
+    startY: 48,
+    head: [["Briefing", "Action", "Description", "Department", "Responsible", "Priority", "Allowed", "Due", "Status"]],
+    body: rows.map((r) => [r.briefing ?? "—", r.action_number, r.description, r.department, r.responsible, labelize(r.priority), r.allowed, fmtDateTime(r.due_at), labelize(r.status)]),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [BRAND.r, BRAND.g, BRAND.b], textColor: 255 },
+    alternateRowStyles: { fillColor: [241, 245, 249] },
+  });
+  footer(doc);
+  doc.save(`briefing-action-points-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+export interface BriefingPdfInput {
+  briefing_number: string;
+  title: string;
+  briefing_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  location: string | null;
+  meeting_type: string;
+  organizer: string;
+  participants: string[];
+  departments: string[];
+  general_notes: string | null;
+  discussion_points: string | null;
+  actions: BriefingActionRow[];
+}
+
+export function generateBriefingReport(b: BriefingPdfInput) {
+  const doc = new jsPDF();
+  header(doc, `Briefing ${b.briefing_number}`, b.title);
+  autoTable(doc, {
+    startY: 48,
+    theme: "plain",
+    styles: { fontSize: 9, cellPadding: 1.5 },
+    columnStyles: { 0: { fontStyle: "bold", textColor: [71, 85, 105], cellWidth: 42 } },
+    body: [
+      ["Date", fmtDate(b.briefing_date)],
+      ["Time", `${b.start_time?.slice(0, 5) ?? "—"} – ${b.end_time?.slice(0, 5) ?? "—"}`],
+      ["Location", b.location ?? "—"],
+      ["Meeting type", labelize(b.meeting_type)],
+      ["Organizer", b.organizer],
+      ["Participants", b.participants.join(", ") || "—"],
+      ["Departments", b.departments.join(", ") || "—"],
+    ],
+  });
+  let y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 100) + 8;
+  const block = (heading: string, text: string) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(BRAND.r, BRAND.g, BRAND.b);
+    doc.text(heading, 14, y);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(30, 41, 59);
+    const lines = doc.splitTextToSize(text, 180);
+    doc.text(lines, 14, y + 5);
+    y = y + 5 + lines.length * 4 + 4;
+  };
+  if (b.general_notes) block("General notes", b.general_notes);
+  if (b.discussion_points) block("Discussion points", b.discussion_points);
+  autoTable(doc, {
+    startY: y,
+    head: [["Action", "Description", "Dept", "Responsible", "Priority", "Due", "Status", "IT Task"]],
+    body: b.actions.map((a) => [a.action_number, a.description, a.department, a.responsible, labelize(a.priority), fmtDateTime(a.due_at), labelize(a.status), a.ticket ?? "—"]),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [BRAND.r, BRAND.g, BRAND.b], textColor: 255 },
+    alternateRowStyles: { fillColor: [241, 245, 249] },
+  });
+  footer(doc);
+  doc.save(`briefing-${b.briefing_number}.pdf`);
+}
