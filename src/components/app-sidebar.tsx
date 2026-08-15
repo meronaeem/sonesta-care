@@ -12,6 +12,7 @@ import {
   FileText,
   Activity,
   Barcode,
+  NotebookPen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,6 +36,7 @@ const nav = [
   { title: "Software & Licenses", url: "/software", icon: Package },
   { title: "Network", url: "/network", icon: Network },
   { title: "Servers", url: "/servers", icon: ServerCog },
+  { title: "Briefing Minutes", url: "/briefings", icon: NotebookPen },
   { title: "Preventive Maintenance", url: "/pm", icon: Wrench },
   { title: "Technician Mode", url: "/tech", icon: Barcode },
   { title: "Activity Feed", url: "/activity", icon: Activity },
