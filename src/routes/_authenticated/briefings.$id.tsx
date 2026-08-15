@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft, Plus, Pencil, Trash2, Ticket as TicketIcon, ExternalLink, CheckCircle2,
-  Paperclip, FileDown, MapPin, Clock, User as UserIcon, Users,
+  Paperclip, FileDown, MapPin, Clock, User as UserIcon, Users, Eye,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -24,8 +24,8 @@ import { generateBriefingReport } from "@/lib/pdf-reports";
 import { notifyActionPoint } from "@/lib/briefings.functions";
 import { BriefingDialog } from "./briefings.index";
 import {
-  ALLOWED_TIMES, ACTION_STATUSES, PRIORITIES, REMINDER_OPTIONS, STATUS_BADGE, PRIORITY_BADGE,
-  allowedLabel, computeDue, effectiveStatus, fromLocalInput, toLocalInput,
+  ACTION_STATUSES, PRIORITIES, REMINDER_OPTIONS, STATUS_BADGE, PRIORITY_BADGE,
+  allowedLabel, dateFromDue, dueFromDate, effectiveStatus,
 } from "@/lib/briefings";
 
 export const Route = createFileRoute("/_authenticated/briefings/$id")({
@@ -46,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/briefings/$id")({
 
 interface ActionPoint {
   id: string; action_number: string; briefing_id: string; description: string;
+  point_number: number | null;
   department_id: string | null; responsible_id: string | null; priority: string;
   assigned_at: string; allowed_time: string; custom_minutes: number | null; due_at: string;
   status: string; comments: string | null; completed_at: string | null; completion_notes: string | null;
@@ -59,7 +60,9 @@ function BriefingDetail() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [editBriefing, setEditBriefing] = useState(false);
-  const [apDialog, setApDialog] = useState<{ mode: "create" | "edit"; row?: ActionPoint } | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewFor, setViewFor] = useState<ActionPoint | null>(null);
   const [attachFor, setAttachFor] = useState<{ type: "briefing" | "action_point"; id: string; label: string } | null>(null);
   const [completeFor, setCompleteFor] = useState<ActionPoint | null>(null);
 
@@ -75,7 +78,7 @@ function BriefingDetail() {
   const { data: actions = [] } = useQuery({
     queryKey: ["action_points", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("briefing_action_points").select("*").eq("briefing_id", id).order("created_at");
+      const { data, error } = await supabase.from("briefing_action_points").select("*").eq("briefing_id", id).order("point_number", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data as unknown as ActionPoint[];
     },
@@ -169,8 +172,9 @@ function BriefingDetail() {
     },
     onSuccess: (apId, vars) => {
       qc.invalidateQueries({ queryKey: ["action_points"] });
-      toast.success(vars.editId ? "Action point updated" : "Action point added");
-      setApDialog(null);
+      toast.success(vars.editId ? "Point updated" : "Point added");
+      setAdding(false);
+      setEditingId(null);
       if (!vars.editId) notifyActionPoint({ data: { actionPointId: apId, kind: "assigned" } }).catch(() => {});
     },
     onError: (e: Error) => toast.error(e.message),
@@ -265,10 +269,12 @@ function BriefingDetail() {
       general_notes: b?.general_notes ?? null,
       discussion_points: b?.discussion_points ?? null,
       actions: rows.map((a) => ({
+        point: a.point_number ? `#${a.point_number}` : a.action_number,
         action_number: a.action_number, description: a.description,
         department: deptOf(a.department_id), responsible: nameOf(a.responsible_id),
         priority: a.priority, allowed: allowedLabel(a.allowed_time, a.custom_minutes),
         due_at: a.due_at, status: a.live, ticket: ticketFor(a.id)?.ticket_number ?? "—",
+        completed_at: a.completed_at, notes: a.comments,
       })),
     });
 
@@ -316,45 +322,73 @@ function BriefingDetail() {
             </div>
           )}
           {b?.general_notes && (<><Separator /><div><div className="font-medium mb-1">General notes</div><p className="whitespace-pre-wrap text-muted-foreground">{b.general_notes}</p></div></>)}
-          {b?.discussion_points && (<><Separator /><div><div className="font-medium mb-1">Discussion points</div><p className="whitespace-pre-wrap text-muted-foreground">{b.discussion_points}</p></div></>)}
+          {b?.discussion_points && (<><Separator /><div><div className="font-medium mb-1">Discussion summary</div><p className="whitespace-pre-wrap text-muted-foreground">{b.discussion_points}</p></div></>)}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
-            <CardTitle>Action points</CardTitle>
+            <CardTitle>Discussion &amp; Action Points</CardTitle>
             <CardDescription>{rows.length} recorded · {rows.filter((r) => r.live === "overdue").length} overdue</CardDescription>
           </div>
-          {canEdit && <Button size="sm" onClick={() => setApDialog({ mode: "create" })}><Plus className="h-4 w-4 mr-2" />Add Action Point</Button>}
+          {canEdit && !adding && <Button size="sm" onClick={() => { setEditingId(null); setAdding(true); }}><Plus className="h-4 w-4 mr-2" />Add Point</Button>}
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="space-y-4">
+          {adding && (
+            <PointForm
+              pointNumber={(rows.reduce((m, r) => Math.max(m, r.point_number ?? 0), 0) || 0) + 1}
+              people={people}
+              departments={departments}
+              pending={saveAction.isPending}
+              onCancel={() => setAdding(false)}
+              onSubmit={(payload) => saveAction.mutate({ payload })}
+            />
+          )}
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr className="text-left">
-                {["Action Point", "Department", "Responsible", "Priority", "Allowed Time", "Due Date/Time", "Status", "IT Task", "Actions"].map((h) => (
+                {["#", "Discussion Point", "Action By", "Target Date", "Priority", "Status", "Related Task", "Actions"].map((h) => (
                   <th key={h} className="px-2 py-2 font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">No action points yet.</td></tr>}
+              {rows.length === 0 && !adding && <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No discussion points yet — click “Add Point”.</td></tr>}
               {rows.map((a) => {
                 const t = ticketFor(a.id);
                 const resolved = t && ["resolved", "closed"].includes(t.status);
+                if (editingId === a.id) {
+                  return (
+                    <tr key={a.id}><td colSpan={8} className="py-3">
+                      <PointForm
+                        initial={a}
+                        pointNumber={a.point_number ?? 0}
+                        people={people}
+                        departments={departments}
+                        pending={saveAction.isPending}
+                        onCancel={() => setEditingId(null)}
+                        onSubmit={(payload) => saveAction.mutate({ payload, editId: a.id })}
+                      />
+                    </td></tr>
+                  );
+                }
                 return (
                   <tr key={a.id} className="border-b last:border-0 align-top">
+                    <td className="px-2 py-2 font-semibold tabular-nums">{a.point_number ?? "—"}</td>
                     <td className="px-2 py-2">
-                      <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                       <div className="max-w-sm">{a.description}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                       {a.comments && <div className="text-xs text-muted-foreground mt-1">💬 {a.comments}</div>}
                       {a.completion_notes && <div className="text-xs text-emerald-600 mt-1">✓ {a.completion_notes}</div>}
                     </td>
-                    <td className="px-2 py-2">{deptOf(a.department_id)}</td>
-                    <td className="px-2 py-2">{nameOf(a.responsible_id)}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <div>{deptOf(a.department_id)}</div>
+                      <div className="text-xs text-muted-foreground">{nameOf(a.responsible_id)}</div>
+                    </td>
+                    <td className="px-2 py-2 whitespace-nowrap">{fmtDate(a.due_at)}</td>
                     <td className="px-2 py-2"><Badge className={PRIORITY_BADGE[a.priority]}>{labelize(a.priority)}</Badge></td>
-                    <td className="px-2 py-2 whitespace-nowrap">{allowedLabel(a.allowed_time, a.custom_minutes)}</td>
-                    <td className="px-2 py-2 whitespace-nowrap">{fmtDateTime(a.due_at)}</td>
                     <td className="px-2 py-2"><Badge className={STATUS_BADGE[a.live]}>{labelize(a.live)}</Badge></td>
                     <td className="px-2 py-2 whitespace-nowrap">
                       {t ? (
@@ -377,8 +411,9 @@ function BriefingDetail() {
                     </td>
                     <td className="px-2 py-2">
                       <div className="flex gap-1">
+                        <Button size="sm" variant="ghost" aria-label="View" onClick={() => setViewFor(a)}><Eye className="h-4 w-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label="Attachments" onClick={() => setAttachFor({ type: "action_point", id: a.id, label: a.action_number })}><Paperclip className="h-4 w-4" /></Button>
-                        {canEdit && <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => setApDialog({ mode: "edit", row: a })}><Pencil className="h-4 w-4" /></Button>}
+                        {canEdit && <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => { setAdding(false); setEditingId(a.id); }}><Pencil className="h-4 w-4" /></Button>}
                         {a.live !== "completed" && (isIT || a.responsible_id === user?.id || canEdit) && (
                           <Button size="sm" variant="ghost" aria-label="Mark completed" onClick={() => setCompleteFor(a)}><CheckCircle2 className="h-4 w-4 text-emerald-600" /></Button>
                         )}
@@ -390,6 +425,7 @@ function BriefingDetail() {
               })}
             </tbody>
           </table>
+          </div>
         </CardContent>
       </Card>
 
@@ -411,15 +447,23 @@ function BriefingDetail() {
         </Dialog>
       )}
 
-      {apDialog && (
-        <Dialog open onOpenChange={(o) => !o && setApDialog(null)}>
-          <ActionPointDialog
-            initial={apDialog.row}
-            people={people}
-            departments={departments}
-            pending={saveAction.isPending}
-            onSubmit={(payload) => saveAction.mutate({ payload, editId: apDialog.row?.id })}
-          />
+      {viewFor && (
+        <Dialog open onOpenChange={(o) => !o && setViewFor(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Point #{viewFor.point_number ?? "—"} · {viewFor.action_number}</DialogTitle></DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div><div className="font-medium">Discussion point</div><p className="whitespace-pre-wrap text-muted-foreground">{viewFor.description}</p></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><div className="font-medium">Action by</div><p className="text-muted-foreground">{deptOf(viewFor.department_id)} · {nameOf(viewFor.responsible_id)}</p></div>
+                <div><div className="font-medium">Target date</div><p className="text-muted-foreground">{fmtDate(viewFor.due_at)}</p></div>
+                <div><div className="font-medium">Status</div><Badge className={STATUS_BADGE[effectiveStatus(viewFor.status, viewFor.due_at)]}>{labelize(effectiveStatus(viewFor.status, viewFor.due_at))}</Badge></div>
+                <div><div className="font-medium">Priority</div><Badge className={PRIORITY_BADGE[viewFor.priority]}>{labelize(viewFor.priority)}</Badge></div>
+              </div>
+              {viewFor.comments && <div><div className="font-medium">Action / notes</div><p className="whitespace-pre-wrap text-muted-foreground">{viewFor.comments}</p></div>}
+              {viewFor.completed_at && <div><div className="font-medium">Completed</div><p className="text-muted-foreground">{fmtDateTime(viewFor.completed_at)} — {viewFor.completion_notes ?? "—"}</p></div>}
+              <div><div className="font-medium mb-1">Attachments</div><AttachmentsPanel entityType="action_point" entityId={viewFor.id} /></div>
+            </div>
+          </DialogContent>
         </Dialog>
       )}
 
@@ -454,137 +498,131 @@ function BriefingDetail() {
   );
 }
 
-function ActionPointDialog({
-  initial, people, departments, pending, onSubmit,
+function PointForm({
+  initial, pointNumber, people, departments, pending, onSubmit, onCancel,
 }: {
   initial?: ActionPoint;
+  pointNumber: number;
   people: { id: string; full_name: string | null; email: string | null; department_id: string | null }[];
   departments: { id: string; name: string }[];
   pending: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
+  onCancel: () => void;
 }) {
   const [dept, setDept] = useState(initial?.department_id ?? "");
   const [resp, setResp] = useState(initial?.responsible_id ?? "");
   const [priority, setPriority] = useState(initial?.priority ?? "medium");
   const [status, setStatus] = useState(initial?.status ?? "open");
-  const [allowed, setAllowed] = useState(initial?.allowed_time ?? "1d");
-  const [custom, setCustom] = useState(initial?.custom_minutes ? String(initial.custom_minutes) : "");
-  const [assigned, setAssigned] = useState(toLocalInput(initial?.assigned_at ?? new Date().toISOString()));
-  const [due, setDue] = useState(toLocalInput(initial?.due_at ?? computeDue(new Date().toISOString(), "1d")));
-  const [manualDue, setManualDue] = useState(false);
+  const [target, setTarget] = useState(dateFromDue(initial?.due_at) || new Date().toISOString().slice(0, 10));
   const [reminder, setReminder] = useState(String(initial?.reminder_minutes_before ?? 60));
   const [showAll, setShowAll] = useState(false);
-
-  const recalc = (a: string, opt: string, cm: string) => {
-    if (manualDue || !a) return;
-    setDue(toLocalInput(computeDue(fromLocalInput(a), opt, cm ? Number(cm) : null)));
-  };
 
   const candidates = showAll || !dept ? people : people.filter((p) => p.department_id === dept);
 
   const submit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const description = String(f.get("description") ?? "").trim();
+    if (!description) return toast.error("Discussion point is required");
+    if (!target) return toast.error("Target date is required");
     onSubmit({
-      description: String(f.get("description") ?? "").trim(),
+      description,
       department_id: dept || null,
       responsible_id: resp || null,
       priority,
       status,
-      assigned_at: fromLocalInput(assigned),
-      allowed_time: allowed,
-      custom_minutes: allowed === "custom" && custom ? Number(custom) : null,
-      due_at: fromLocalInput(due),
+      assigned_at: initial?.assigned_at ?? new Date().toISOString(),
+      allowed_time: initial?.allowed_time ?? "1d",
+      custom_minutes: null,
+      due_at: dueFromDate(target),
       reminder_minutes_before: Number(reminder),
       comments: String(f.get("comments") ?? "").trim() || null,
     });
   };
 
   return (
-    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-      <DialogHeader><DialogTitle>{initial ? `Edit ${initial.action_number}` : "New action point"}</DialogTitle></DialogHeader>
-      <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="rounded-lg border bg-muted/30 p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold">Point #{pointNumber}</h3>
+        {initial && <span className="font-mono text-xs text-muted-foreground">{initial.action_number}</span>}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="description">Discussion point</Label>
+        <Textarea id="description" name="description" required rows={2} defaultValue={initial?.description ?? ""} placeholder="Enter discussion point" />
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" required rows={3} defaultValue={initial?.description ?? ""} placeholder="What needs to be done?" />
+          <Label>Action by — department</Label>
+          <Select value={dept} onValueChange={(v) => { setDept(v); setResp(""); }}>
+            <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+            <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Related department</Label>
-            <Select value={dept} onValueChange={(v) => { setDept(v); setResp(""); }}>
-              <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-              <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
-            </Select>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label>Action by — employee</Label>
+            <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setShowAll((s) => !s)}>
+              {showAll ? "Filter by department" : "Show all users"}
+            </button>
           </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Responsible person</Label>
-              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setShowAll((s) => !s)}>
-                {showAll ? "Filter by department" : "Show all users"}
-              </button>
-            </div>
-            <Select value={resp} onValueChange={setResp}>
-              <SelectTrigger><SelectValue placeholder="Select person" /></SelectTrigger>
-              <SelectContent>
-                {candidates.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No users in this department</div>}
-                {candidates.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={resp} onValueChange={setResp}>
+            <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+            <SelectContent>
+              {candidates.length === 0 && <div className="px-2 py-1.5 text-xs text-muted-foreground">No users in this department</div>}
+              {candidates.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name ?? p.email}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label>Priority</Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{ACTION_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Reminder</Label>
-            <Select value={reminder} onValueChange={setReminder}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{REMINDER_OPTIONS.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
+      </div>
+
+      <div className="grid md:grid-cols-4 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="target">Target date</Label>
+          <Input id="target" type="date" required value={target} onChange={(e) => setTarget(e.target.value)} />
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="assigned">Assigned date/time</Label>
-            <Input id="assigned" type="datetime-local" value={assigned} onChange={(e) => { setAssigned(e.target.value); recalc(e.target.value, allowed, custom); }} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Allowed completion time</Label>
-            <Select value={allowed} onValueChange={(v) => { setAllowed(v); recalc(assigned, v, custom); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{ALLOWED_TIMES.map((a) => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}</SelectContent>
-            </Select>
-            {allowed === "custom" && (
-              <Input className="mt-2" type="number" min={1} placeholder="Minutes" value={custom}
-                onChange={(e) => { setCustom(e.target.value); recalc(assigned, "custom", e.target.value); }} />
-            )}
-          </div>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="due">Due date/time</Label>
-              <button type="button" className="text-[11px] text-muted-foreground underline" onClick={() => setManualDue((m) => !m)}>
-                {manualDue ? "Auto-calculate" : "Override"}
-              </button>
-            </div>
-            <Input id="due" type="datetime-local" value={due} readOnly={!manualDue} onChange={(e) => setDue(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">{manualDue ? "Manual deadline" : "Assigned time + allowed time"}</p>
-          </div>
+        <div className="space-y-1.5">
+          <Label>Status</Label>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{ACTION_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <div className="space-y-1.5"><Label htmlFor="comments">Comments</Label><Textarea id="comments" name="comments" rows={2} defaultValue={initial?.comments ?? ""} /></div>
-        <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save action point"}</Button></DialogFooter>
-      </form>
-    </DialogContent>
+        <div className="space-y-1.5">
+          <Label>Priority</Label>
+          <Select value={priority} onValueChange={setPriority}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Reminder</Label>
+          <Select value={reminder} onValueChange={setReminder}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>{REMINDER_OPTIONS.map((r) => <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="comments">Action / notes</Label>
+        <Textarea id="comments" name="comments" rows={2} defaultValue={initial?.comments ?? ""} placeholder="Enter notes (optional)" />
+      </div>
+
+      {initial ? (
+        <div className="space-y-1.5">
+          <Label>Attachment</Label>
+          <AttachmentsPanel entityType="action_point" entityId={initial.id} />
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Save the point first, then use the paperclip action to attach files.</p>
+      )}
+
+      <div className="flex gap-2">
+        <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save Point"}</Button>
+        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+      </div>
+    </form>
   );
 }

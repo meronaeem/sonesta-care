@@ -15,7 +15,7 @@ import { Plus, NotebookPen, FileDown, FileSpreadsheet, CalendarDays, ListChecks,
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { fmtDate, fmtDateTime, labelize } from "@/lib/format";
+import { fmtDate, labelize } from "@/lib/format";
 import { useAuth } from "@/hooks/use-auth";
 import { exportToXlsx } from "@/lib/export-xlsx";
 import { generateBriefingActionsReport } from "@/lib/pdf-reports";
@@ -47,6 +47,7 @@ interface Briefing {
 }
 interface ActionPoint {
   id: string; action_number: string; briefing_id: string; description: string;
+  point_number: number | null; comments: string | null;
   department_id: string | null; responsible_id: string | null; priority: string;
   assigned_at: string; allowed_time: string; custom_minutes: number | null;
   due_at: string; status: string; completed_at: string | null;
@@ -81,6 +82,7 @@ function BriefingsPage() {
   const [status, setStatus] = useState("all");
   const [priority, setPriority] = useState("all");
   const [mtype, setMtype] = useState("all");
+  const [briefingFilter, setBriefingFilter] = useState("all");
   const [overdueOnly, setOverdueOnly] = useState(false);
 
   const { data: briefings = [] } = useQuery({
@@ -156,6 +158,7 @@ function BriefingsPage() {
       if (from && (!b || b.briefing_date < from)) return false;
       if (to && (!b || b.briefing_date > to)) return false;
       if (mtype !== "all" && b?.meeting_type !== mtype) return false;
+      if (briefingFilter !== "all" && a.briefing_id !== briefingFilter) return false;
       if (dept !== "all" && a.department_id !== dept) return false;
       if (resp !== "all" && a.responsible_id !== resp) return false;
       if (status !== "all" && a.live !== status) return false;
@@ -164,7 +167,7 @@ function BriefingsPage() {
       if (q.trim() && !`${a.action_number} ${a.description}`.toLowerCase().includes(q.trim().toLowerCase())) return false;
       return true;
     });
-  }, [enriched, briefings, from, to, mtype, dept, resp, status, priority, overdueOnly, q]);
+  }, [enriched, briefings, from, to, mtype, briefingFilter, dept, resp, status, priority, overdueOnly, q]);
 
   const filteredBriefings = useMemo(() => {
     return briefings.filter((b) => {
@@ -177,9 +180,12 @@ function BriefingsPage() {
   }, [briefings, from, to, mtype, q]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
   const weekEnd = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const count = (s: string) => filteredActions.filter((a) => a.live === s).length;
-  const dueToday = filteredActions.filter((a) => a.due_at.slice(0, 10) === today && !["completed", "cancelled"].includes(a.live)).length;
+  const openish = (a: (typeof enriched)[number]) => !["completed", "cancelled"].includes(a.live);
+  const dueToday = filteredActions.filter((a) => a.due_at.slice(0, 10) === today && openish(a)).length;
+  const dueTomorrow = filteredActions.filter((a) => a.due_at.slice(0, 10) === tomorrow && openish(a)).length;
   const dueWeek = filteredActions.filter((a) => a.due_at.slice(0, 10) <= weekEnd && a.due_at.slice(0, 10) >= today && !["completed", "cancelled"].includes(a.live)).length;
 
   const group = (key: (a: (typeof filteredActions)[number]) => string) => {
@@ -195,21 +201,20 @@ function BriefingsPage() {
         return {
           Briefing: b?.briefing_number ?? "",
           "Briefing Title": b?.title ?? "",
-          Date: b?.briefing_date ?? "",
-          "Action Point": a.action_number,
-          Description: a.description,
-          Department: deptOf(a.department_id),
-          Responsible: nameOf(a.responsible_id),
+          "Briefing Date": b?.briefing_date ?? "",
+          "Point Number": a.point_number ?? "",
+          "Discussion Point": a.description,
+          "Action By Department": deptOf(a.department_id),
+          "Action By Employee": nameOf(a.responsible_id),
           Priority: labelize(a.priority),
-          "Allowed Time": allowedLabel(a.allowed_time, a.custom_minutes),
-          "Assigned": fmtDateTime(a.assigned_at),
-          "Due": fmtDateTime(a.due_at),
+          "Target Date": fmtDate(a.due_at),
           Status: labelize(a.live),
-          Completed: a.completed_at ? fmtDateTime(a.completed_at) : "",
+          "Completion Date": a.completed_at ? fmtDate(a.completed_at) : "",
+          "Action / Notes": a.comments ?? "",
         };
       }),
-      `briefing-action-points-${today}`,
-      "Action Points",
+      `briefing-discussion-points-${today}`,
+      "Discussion Points",
     );
   };
 
@@ -219,6 +224,8 @@ function BriefingsPage() {
         const b = briefings.find((x) => x.id === a.briefing_id);
         return {
           briefing: `${b?.briefing_number ?? ""} ${b?.title ?? ""}`.trim(),
+          briefing_date: b?.briefing_date,
+          point: a.point_number ? `#${a.point_number}` : a.action_number,
           action_number: a.action_number,
           description: a.description,
           department: deptOf(a.department_id),
@@ -227,9 +234,11 @@ function BriefingsPage() {
           allowed: allowedLabel(a.allowed_time, a.custom_minutes),
           due_at: a.due_at,
           status: a.live,
+          completed_at: a.completed_at,
+          notes: a.comments,
         };
       }),
-      `${filteredActions.length} action points`,
+      `${filteredActions.length} discussion & action points`,
     );
   };
 
@@ -260,9 +269,9 @@ function BriefingsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi title="Today's Briefings" value={briefings.filter((b) => b.briefing_date === today).length} icon={CalendarDays} hint={`${briefings.length} total`} />
-        <Kpi title="Total Action Points" value={filteredActions.length} icon={ListChecks} hint={`${count("open")} open · ${count("in_progress")} in progress`} />
-        <Kpi title="Overdue" value={count("overdue")} icon={AlarmClock} hint={`${dueToday} due today · ${dueWeek} this week`} />
-        <Kpi title="Completed" value={count("completed")} icon={CheckCircle2} hint={`${count("waiting")} waiting · ${count("cancelled")} cancelled`} />
+        <Kpi title="Open Points" value={count("open")} icon={ListChecks} hint={`${count("in_progress")} in progress · ${filteredActions.length} total`} />
+        <Kpi title="Overdue" value={count("overdue")} icon={AlarmClock} hint={`${dueToday} due today · ${dueTomorrow} due tomorrow`} />
+        <Kpi title="Completed" value={count("completed")} icon={CheckCircle2} hint={`${dueWeek} due this week · ${count("cancelled")} cancelled`} />
       </div>
 
       <Card>
@@ -308,6 +317,13 @@ function BriefingsPage() {
               {PRIORITIES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
             </SelectContent>
           </Select>
+          <Select value={briefingFilter} onValueChange={setBriefingFilter}>
+            <SelectTrigger><SelectValue placeholder="Briefing" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All briefings</SelectItem>
+              {briefings.map((b) => <SelectItem key={b.id} value={b.id}>{b.briefing_number} — {b.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={overdueOnly} onCheckedChange={(v) => setOverdueOnly(!!v)} /> Overdue only
           </label>
@@ -317,7 +333,7 @@ function BriefingsPage() {
       <Tabs defaultValue="briefings">
         <TabsList>
           <TabsTrigger value="briefings">Briefings ({filteredBriefings.length})</TabsTrigger>
-          <TabsTrigger value="actions">Action Points ({filteredActions.length})</TabsTrigger>
+          <TabsTrigger value="actions">Discussion Points ({filteredActions.length})</TabsTrigger>
           <TabsTrigger value="charts">Charts</TabsTrigger>
         </TabsList>
 
@@ -361,22 +377,23 @@ function BriefingsPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40">
                 <tr className="text-left">
-                  {["Action", "Briefing", "Department", "Responsible", "Priority", "Due", "Status"].map((h) => (
+                  {["#", "Discussion Point", "Briefing", "Department", "Employee", "Priority", "Target Date", "Status"].map((h) => (
                     <th key={h} className="px-3 py-2 font-medium">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredActions.length === 0 && (
-                  <tr><td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">No action points match the filters.</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">No discussion points match the filters.</td></tr>
                 )}
                 {filteredActions.map((a) => {
                   const b = briefings.find((x) => x.id === a.briefing_id);
                   return (
                     <tr key={a.id} className="border-b last:border-0">
+                      <td className="px-3 py-2 font-semibold tabular-nums">{a.point_number ?? "—"}</td>
                       <td className="px-3 py-2">
-                        <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                         <div className="max-w-md truncate">{a.description}</div>
+                        <div className="font-mono text-[11px] text-muted-foreground">{a.action_number}</div>
                       </td>
                       <td className="px-3 py-2">
                         {b && <Link to="/briefings/$id" params={{ id: b.id }} className="text-primary hover:underline">{b.briefing_number}</Link>}
@@ -384,7 +401,7 @@ function BriefingsPage() {
                       <td className="px-3 py-2">{deptOf(a.department_id)}</td>
                       <td className="px-3 py-2">{nameOf(a.responsible_id)}</td>
                       <td className="px-3 py-2"><Badge className={PRIORITY_BADGE[a.priority]}>{labelize(a.priority)}</Badge></td>
-                      <td className="px-3 py-2 whitespace-nowrap">{fmtDateTime(a.due_at)}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">{fmtDate(a.due_at)}</td>
                       <td className="px-3 py-2"><Badge className={STATUS_BADGE[a.live]}>{labelize(a.live)}</Badge></td>
                     </tr>
                   );
@@ -473,7 +490,6 @@ export function BriefingDialog({
         meeting_type: meetingType,
         organizer_id: organizer || null,
         general_notes: val("general_notes"),
-        discussion_points: val("discussion_points"),
       },
       participants,
       depts,
@@ -541,8 +557,9 @@ export function BriefingDialog({
         </div>
         <div className="space-y-1.5"><Label htmlFor="general_notes">General notes</Label>
           <Textarea id="general_notes" name="general_notes" rows={3} defaultValue={String(b.general_notes ?? "")} /></div>
-        <div className="space-y-1.5"><Label htmlFor="discussion_points">Discussion points</Label>
-          <Textarea id="discussion_points" name="discussion_points" rows={3} defaultValue={String(b.discussion_points ?? "")} /></div>
+        <p className="text-xs text-muted-foreground">
+          Discussion &amp; action points are added one by one inside the briefing after it is saved.
+        </p>
         <DialogFooter><Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save briefing"}</Button></DialogFooter>
       </form>
     </DialogContent>

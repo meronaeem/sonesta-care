@@ -82,6 +82,21 @@ export function fromLocalInput(v: string): string {
   return new Date(v).toISOString();
 }
 
+/** yyyy-mm-dd (local) -> ISO timestamp at end of that day. */
+export function dueFromDate(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1, 23, 59, 0, 0).toISOString();
+}
+
+/** ISO timestamp -> yyyy-mm-dd in local time, for <input type="date">. */
+export function dateFromDue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function allowedLabel(option: string, custom?: number | null): string {
   if (option === "custom") return custom ? `${custom} min` : "Custom";
   return ALLOWED_TIMES.find((a) => a.value === option)?.label ?? option;

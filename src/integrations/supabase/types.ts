@@ -319,6 +319,7 @@ export type Database = {
           description: string
           due_at: string
           id: string
+          point_number: number | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           reminder_minutes_before: number
           responsible_id: string | null
@@ -341,6 +342,7 @@ export type Database = {
           description: string
           due_at: string
           id?: string
+          point_number?: number | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           reminder_minutes_before?: number
           responsible_id?: string | null
@@ -363,6 +365,7 @@ export type Database = {
           description?: string
           due_at?: string
           id?: string
+          point_number?: number | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           reminder_minutes_before?: number
           responsible_id?: string | null

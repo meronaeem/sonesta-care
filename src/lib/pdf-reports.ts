@@ -245,6 +245,8 @@ export function generatePmComplianceReport(rows: PmComplianceRow[], from: string
 }
 export interface BriefingActionRow {
   briefing?: string;
+  briefing_date?: string;
+  point?: string;
   action_number: string;
   description: string;
   department: string;
@@ -253,6 +255,8 @@ export interface BriefingActionRow {
   allowed: string;
   due_at: string;
   status: string;
+  completed_at?: string | null;
+  notes?: string | null;
   ticket?: string;
 }
 
@@ -261,8 +265,12 @@ export function generateBriefingActionsReport(rows: BriefingActionRow[], subtitl
   header(doc, "Briefing Action Points", subtitle ?? `${rows.length} action points`);
   autoTable(doc, {
     startY: 48,
-    head: [["Briefing", "Action", "Description", "Department", "Responsible", "Priority", "Allowed", "Due", "Status"]],
-    body: rows.map((r) => [r.briefing ?? "—", r.action_number, r.description, r.department, r.responsible, labelize(r.priority), r.allowed, fmtDateTime(r.due_at), labelize(r.status)]),
+    head: [["Date", "Briefing", "#", "Discussion Point", "Department", "Employee", "Priority", "Target Date", "Status", "Completed", "Notes", "IT Task"]],
+    body: rows.map((r) => [
+      fmtDate(r.briefing_date), r.briefing ?? "—", r.point ?? r.action_number, r.description,
+      r.department, r.responsible, labelize(r.priority), fmtDate(r.due_at), labelize(r.status),
+      r.completed_at ? fmtDate(r.completed_at) : "—", r.notes ?? "—", r.ticket ?? "—",
+    ]),
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [BRAND.r, BRAND.g, BRAND.b], textColor: 255 },
     alternateRowStyles: { fillColor: [241, 245, 249] },
@@ -315,11 +323,14 @@ export function generateBriefingReport(b: BriefingPdfInput) {
     y = y + 5 + lines.length * 4 + 4;
   };
   if (b.general_notes) block("General notes", b.general_notes);
-  if (b.discussion_points) block("Discussion points", b.discussion_points);
+  if (b.discussion_points) block("Discussion summary", b.discussion_points);
   autoTable(doc, {
     startY: y,
-    head: [["Action", "Description", "Dept", "Responsible", "Priority", "Due", "Status", "IT Task"]],
-    body: b.actions.map((a) => [a.action_number, a.description, a.department, a.responsible, labelize(a.priority), fmtDateTime(a.due_at), labelize(a.status), a.ticket ?? "—"]),
+    head: [["#", "Discussion Point", "Dept", "Employee", "Priority", "Target Date", "Status", "Completed", "Notes", "IT Task"]],
+    body: b.actions.map((a) => [
+      a.point ?? a.action_number, a.description, a.department, a.responsible, labelize(a.priority),
+      fmtDate(a.due_at), labelize(a.status), a.completed_at ? fmtDate(a.completed_at) : "—", a.notes ?? "—", a.ticket ?? "—",
+    ]),
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [BRAND.r, BRAND.g, BRAND.b], textColor: 255 },
     alternateRowStyles: { fillColor: [241, 245, 249] },
