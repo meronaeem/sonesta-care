@@ -363,6 +363,8 @@ function BriefingDetail() {
         </CardContent>
       </Card>
 
+      <BriefingRoomsSection briefingId={id} rooms={rooms} people={people} canEdit={canEdit} />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
