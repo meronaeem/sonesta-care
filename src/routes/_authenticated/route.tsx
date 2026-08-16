@@ -18,6 +18,7 @@ const ROLE_LABELS: Record<AppRole, string> = {
   helpdesk: "Helpdesk",
   department_manager: "Department Manager",
   employee: "Employee",
+  read_only: "Read Only",
 };
 
 function AuthedLayout() {
