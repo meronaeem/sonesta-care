@@ -9,7 +9,8 @@ export type AppRole =
   | "it_engineer"
   | "helpdesk"
   | "department_manager"
-  | "employee";
+  | "employee"
+  | "read_only";
 
 export interface Profile {
   id: string;
