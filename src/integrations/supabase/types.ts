@@ -82,6 +82,165 @@ export type Database = {
         }
         Relationships: []
       }
+      ad_config: {
+        Row: {
+          base_dn: string
+          bind_password_set: boolean
+          bind_username: string
+          connection_checked_at: string | null
+          connection_status: string
+          created_at: string
+          default_role: Database["public"]["Enums"]["app_role"]
+          domain_name: string
+          enabled: boolean
+          group_mapping_enabled: boolean
+          groups_search_base: string
+          id: boolean
+          last_successful_sync_at: string | null
+          last_sync_at: string | null
+          last_sync_error: string | null
+          last_sync_status: string | null
+          ldap_host: string
+          ldap_port: number
+          ldaps_port: number
+          ssl_enabled: boolean
+          sync_interval: string
+          updated_at: string
+          updated_by: string | null
+          users_search_base: string
+          validate_certificate: boolean
+        }
+        Insert: {
+          base_dn?: string
+          bind_password_set?: boolean
+          bind_username?: string
+          connection_checked_at?: string | null
+          connection_status?: string
+          created_at?: string
+          default_role?: Database["public"]["Enums"]["app_role"]
+          domain_name?: string
+          enabled?: boolean
+          group_mapping_enabled?: boolean
+          groups_search_base?: string
+          id?: boolean
+          last_successful_sync_at?: string | null
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          ldap_host?: string
+          ldap_port?: number
+          ldaps_port?: number
+          ssl_enabled?: boolean
+          sync_interval?: string
+          updated_at?: string
+          updated_by?: string | null
+          users_search_base?: string
+          validate_certificate?: boolean
+        }
+        Update: {
+          base_dn?: string
+          bind_password_set?: boolean
+          bind_username?: string
+          connection_checked_at?: string | null
+          connection_status?: string
+          created_at?: string
+          default_role?: Database["public"]["Enums"]["app_role"]
+          domain_name?: string
+          enabled?: boolean
+          group_mapping_enabled?: boolean
+          groups_search_base?: string
+          id?: boolean
+          last_successful_sync_at?: string | null
+          last_sync_at?: string | null
+          last_sync_error?: string | null
+          last_sync_status?: string | null
+          ldap_host?: string
+          ldap_port?: number
+          ldaps_port?: number
+          ssl_enabled?: boolean
+          sync_interval?: string
+          updated_at?: string
+          updated_by?: string | null
+          users_search_base?: string
+          validate_certificate?: boolean
+        }
+        Relationships: []
+      }
+      ad_group_mappings: {
+        Row: {
+          ad_group: string
+          created_at: string
+          id: string
+          priority: number
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          ad_group: string
+          created_at?: string
+          id?: string
+          priority?: number
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          ad_group?: string
+          created_at?: string
+          id?: string
+          priority?: number
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      ad_sync_runs: {
+        Row: {
+          departments_created: number
+          error_count: number
+          errors: Json
+          finished_at: string | null
+          id: string
+          roles_applied: number
+          started_at: string
+          status: string
+          trigger_source: string
+          triggered_by: string | null
+          users_created: number
+          users_disabled: number
+          users_found: number
+          users_updated: number
+        }
+        Insert: {
+          departments_created?: number
+          error_count?: number
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          roles_applied?: number
+          started_at?: string
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+          users_created?: number
+          users_disabled?: number
+          users_found?: number
+          users_updated?: number
+        }
+        Update: {
+          departments_created?: number
+          error_count?: number
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          roles_applied?: number
+          started_at?: string
+          status?: string
+          trigger_source?: string
+          triggered_by?: string | null
+          users_created?: number
+          users_disabled?: number
+          users_found?: number
+          users_updated?: number
+        }
+        Relationships: []
+      }
       asset_movements: {
         Row: {
           asset_id: string
@@ -299,6 +458,42 @@ export type Database = {
           size_bytes?: number | null
           storage_path?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      auth_audit_log: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          ip_address: string | null
+          reason: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -851,39 +1046,87 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ad_dn: string | null
+          ad_groups: string[]
           avatar_url: string | null
+          company: string | null
           created_at: string
           department_id: string | null
           email: string | null
+          employee_id: string | null
+          first_name: string | null
           full_name: string | null
           id: string
+          is_active: boolean
+          is_ad_user: boolean
           job_title: string | null
+          last_ad_sync: string | null
+          last_login: string | null
+          last_name: string | null
+          manager_id: string | null
+          manager_name: string | null
+          mobile: string | null
+          office: string | null
           phone: string | null
+          sam_account_name: string | null
           updated_at: string
+          user_principal_name: string | null
           username: string | null
         }
         Insert: {
+          ad_dn?: string | null
+          ad_groups?: string[]
           avatar_url?: string | null
+          company?: string | null
           created_at?: string
           department_id?: string | null
           email?: string | null
+          employee_id?: string | null
+          first_name?: string | null
           full_name?: string | null
           id: string
+          is_active?: boolean
+          is_ad_user?: boolean
           job_title?: string | null
+          last_ad_sync?: string | null
+          last_login?: string | null
+          last_name?: string | null
+          manager_id?: string | null
+          manager_name?: string | null
+          mobile?: string | null
+          office?: string | null
           phone?: string | null
+          sam_account_name?: string | null
           updated_at?: string
+          user_principal_name?: string | null
           username?: string | null
         }
         Update: {
+          ad_dn?: string | null
+          ad_groups?: string[]
           avatar_url?: string | null
+          company?: string | null
           created_at?: string
           department_id?: string | null
           email?: string | null
+          employee_id?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
+          is_ad_user?: boolean
           job_title?: string | null
+          last_ad_sync?: string | null
+          last_login?: string | null
+          last_name?: string | null
+          manager_id?: string | null
+          manager_name?: string | null
+          mobile?: string | null
+          office?: string | null
           phone?: string | null
+          sam_account_name?: string | null
           updated_at?: string
+          user_principal_name?: string | null
           username?: string | null
         }
         Relationships: [
@@ -892,6 +1135,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
