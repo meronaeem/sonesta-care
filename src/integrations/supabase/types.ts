@@ -1213,6 +1213,7 @@ export type Database = {
         | "helpdesk"
         | "department_manager"
         | "employee"
+        | "read_only"
       asset_status:
         | "in_use"
         | "in_stock"
@@ -1417,6 +1418,7 @@ export const Constants = {
         "helpdesk",
         "department_manager",
         "employee",
+        "read_only",
       ],
       asset_status: [
         "in_use",
