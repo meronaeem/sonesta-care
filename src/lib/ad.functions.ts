@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AdUser, AdConfigFull, AdSyncRunRow, AdMappingRow } from "./ad.server";
 
 /** Public: tells the sign-in screen whether Active Directory login is available. */
 export const getAdLoginMode = createServerFn({ method: "GET" }).handler(async () => {
@@ -52,7 +53,7 @@ export const adLogin = createServerFn({ method: "POST" })
       throw new Error("Active Directory login is disabled.");
     }
 
-    let result: { ok: boolean; user?: ad.AdUser; message?: string; code?: string };
+    let result: { ok: boolean; user?: AdUser; message?: string; code?: string };
     try {
       result = await ad.callBridge("/authenticate", {
         config: ad.toBridgeConfig(cfg),
@@ -109,9 +110,9 @@ export const getAdOverview = createServerFn({ method: "GET" })
     const adUsers = profiles.filter((p) => p.is_ad_user);
 
     return {
-      config: config.data as unknown,
-      runs: (runs.data ?? []) as unknown,
-      mappings: (mappings.data ?? []) as unknown,
+      config: (config.data ?? null) as unknown as AdConfigFull | null,
+      runs: (runs.data ?? []) as unknown as AdSyncRunRow[],
+      mappings: (mappings.data ?? []) as unknown as AdMappingRow[],
       stats: {
         total: adUsers.length,
         active: adUsers.filter((p) => p.is_active).length,
