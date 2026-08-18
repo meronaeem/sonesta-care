@@ -241,9 +241,9 @@ export async function upsertAdUser(
 async function linkManagers(admin: Admin, users: AdUser[]) {
   const withManagers = users.filter((u) => u.managerDn);
   if (!withManagers.length) return;
-  const { data: rows } = await admin.from("profiles").select("id, ad_dn, sam_account_name" as never);
+  const { data: rows } = await admin.from("profiles").select("id, ad_dn" as never);
   const byDn = new Map<string, string>();
-  for (const r of (rows ?? []) as Array<{ id: string; ad_dn: string | null }>) {
+  for (const r of (rows ?? []) as unknown as Array<{ id: string; ad_dn: string | null }>) {
     if (r.ad_dn) byDn.set(r.ad_dn.toLowerCase(), r.id);
   }
   for (const u of withManagers) {
