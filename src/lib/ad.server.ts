@@ -121,6 +121,34 @@ async function ensureDepartment(admin: Admin, name: string | null, created: { co
 
 export interface GroupMapping { ad_group: string; role: string; priority: number }
 
+export interface AdMappingRow { id: string; ad_group: string; role: string; priority: number; created_at: string }
+
+export interface AdConfigFull extends AdConfigRow {
+  bind_password_set: boolean;
+  connection_status: string;
+  connection_checked_at: string | null;
+  last_sync_at: string | null;
+  last_successful_sync_at: string | null;
+  last_sync_status: string | null;
+  last_sync_error: string | null;
+  updated_at: string;
+}
+
+export interface AdSyncRunRow {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  trigger_source: string;
+  status: string;
+  users_found: number;
+  users_created: number;
+  users_updated: number;
+  users_disabled: number;
+  departments_created: number;
+  error_count: number;
+  errors: string[];
+}
+
 export async function loadGroupMappings(admin: Admin): Promise<GroupMapping[]> {
   const { data } = await admin.from("ad_group_mappings" as never).select("ad_group, role, priority").order("priority", { ascending: true });
   return (data ?? []) as unknown as GroupMapping[];
