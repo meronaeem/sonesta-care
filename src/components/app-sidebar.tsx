@@ -13,6 +13,7 @@ import {
   Activity,
   Barcode,
   NotebookPen,
+  Network as NetworkIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -41,6 +42,10 @@ const nav = [
   { title: "Technician Mode", url: "/tech", icon: Barcode },
   { title: "Activity Feed", url: "/activity", icon: Activity },
   { title: "Reports", url: "/reports", icon: FileText },
+];
+
+const admin = [
+  { title: "Active Directory", url: "/admin/active-directory", icon: NetworkIcon },
 ];
 
 export function AppSidebar({ userLabel, roleLabel }: { userLabel: string; roleLabel: string }) {
@@ -72,6 +77,23 @@ export function AppSidebar({ userLabel, roleLabel }: { userLabel: string; roleLa
           <SidebarGroupContent>
             <SidebarMenu>
               {nav.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {admin.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <Link to={item.url}>
