@@ -24,6 +24,7 @@ import { Route as AuthenticatedAssetsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedBriefingsIndexRouteImport } from './routes/_authenticated/briefings.index'
 import { Route as AuthenticatedBriefingsIdRouteImport } from './routes/_authenticated/briefings.$id'
+import { Route as AuthenticatedAdminActiveDirectoryRouteImport } from './routes/_authenticated/admin.active-directory'
 import { Route as ApiPublicHooksPmRemindersRouteImport } from './routes/api/public/hooks/pm-reminders'
 
 const AuthRoute = AuthRouteImport.update({
@@ -102,6 +103,12 @@ const AuthenticatedBriefingsIdRoute =
     path: '/briefings/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminActiveDirectoryRoute =
+  AuthenticatedAdminActiveDirectoryRouteImport.update({
+    id: '/admin/active-directory',
+    path: '/admin/active-directory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksPmRemindersRoute =
   ApiPublicHooksPmRemindersRouteImport.update({
     id: '/api/public/hooks/pm-reminders',
@@ -122,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/software': typeof AuthenticatedSoftwareRoute
   '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/admin/active-directory': typeof AuthenticatedAdminActiveDirectoryRoute
   '/briefings/$id': typeof AuthenticatedBriefingsIdRoute
   '/briefings/': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
@@ -139,6 +147,7 @@ export interface FileRoutesByTo {
   '/software': typeof AuthenticatedSoftwareRoute
   '/tech': typeof AuthenticatedTechRoute
   '/tickets': typeof AuthenticatedTicketsRoute
+  '/admin/active-directory': typeof AuthenticatedAdminActiveDirectoryRoute
   '/briefings/$id': typeof AuthenticatedBriefingsIdRoute
   '/briefings': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/software': typeof AuthenticatedSoftwareRoute
   '/_authenticated/tech': typeof AuthenticatedTechRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRoute
+  '/_authenticated/admin/active-directory': typeof AuthenticatedAdminActiveDirectoryRoute
   '/_authenticated/briefings/$id': typeof AuthenticatedBriefingsIdRoute
   '/_authenticated/briefings/': typeof AuthenticatedBriefingsIndexRoute
   '/api/public/hooks/pm-reminders': typeof ApiPublicHooksPmRemindersRoute
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/software'
     | '/tech'
     | '/tickets'
+    | '/admin/active-directory'
     | '/briefings/$id'
     | '/briefings/'
     | '/api/public/hooks/pm-reminders'
@@ -194,6 +205,7 @@ export interface FileRouteTypes {
     | '/software'
     | '/tech'
     | '/tickets'
+    | '/admin/active-directory'
     | '/briefings/$id'
     | '/briefings'
     | '/api/public/hooks/pm-reminders'
@@ -212,6 +224,7 @@ export interface FileRouteTypes {
     | '/_authenticated/software'
     | '/_authenticated/tech'
     | '/_authenticated/tickets'
+    | '/_authenticated/admin/active-directory'
     | '/_authenticated/briefings/$id'
     | '/_authenticated/briefings/'
     | '/api/public/hooks/pm-reminders'
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBriefingsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/active-directory': {
+      id: '/_authenticated/admin/active-directory'
+      path: '/admin/active-directory'
+      fullPath: '/admin/active-directory'
+      preLoaderRoute: typeof AuthenticatedAdminActiveDirectoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/pm-reminders': {
       id: '/api/public/hooks/pm-reminders'
       path: '/api/public/hooks/pm-reminders'
@@ -352,6 +372,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSoftwareRoute: typeof AuthenticatedSoftwareRoute
   AuthenticatedTechRoute: typeof AuthenticatedTechRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRoute
+  AuthenticatedAdminActiveDirectoryRoute: typeof AuthenticatedAdminActiveDirectoryRoute
   AuthenticatedBriefingsIdRoute: typeof AuthenticatedBriefingsIdRoute
   AuthenticatedBriefingsIndexRoute: typeof AuthenticatedBriefingsIndexRoute
 }
@@ -367,6 +388,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSoftwareRoute: AuthenticatedSoftwareRoute,
   AuthenticatedTechRoute: AuthenticatedTechRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRoute,
+  AuthenticatedAdminActiveDirectoryRoute:
+    AuthenticatedAdminActiveDirectoryRoute,
   AuthenticatedBriefingsIdRoute: AuthenticatedBriefingsIdRoute,
   AuthenticatedBriefingsIndexRoute: AuthenticatedBriefingsIndexRoute,
 }
