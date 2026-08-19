@@ -164,7 +164,7 @@ function AdAdminPage() {
     mutationFn: async () => groupsFn({}),
     onSuccess: (r) => {
       if (!r.ok) return toast.error(r.error ?? "Could not read groups");
-      toast.success(`${r.count ?? r.groups?.length ?? 0} security groups found in the directory`);
+      toast.success(`${r.groups?.length ?? 0} security groups found in the directory`);
     },
     onError: (e: Error) => toast.error(e.message),
   });

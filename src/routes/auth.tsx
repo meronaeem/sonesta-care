@@ -7,7 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Server } from "lucide-react";
+import { Server, Building2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { adLogin, getAdLoginMode } from "@/lib/ad.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -25,6 +28,14 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [adUser, setAdUser] = useState("");
+  const [adPass, setAdPass] = useState("");
+  const [adLoading, setAdLoading] = useState(false);
+
+  const adModeFn = useServerFn(getAdLoginMode);
+  const adLoginFn = useServerFn(adLogin);
+  const adMode = useQuery({ queryKey: ["ad-login-mode"], queryFn: () => adModeFn({}) });
+  const adEnabled = Boolean(adMode.data?.adEnabled);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -59,6 +70,23 @@ function AuthPage() {
     navigate({ to: "/dashboard" });
   };
 
+  const signInWithAd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdLoading(true);
+    try {
+      const res = await adLoginFn({ data: { username: adUser, password: adPass } });
+      const { error } = await supabase.auth.signInWithPassword({ email: res.email, password: res.oneTime });
+      if (error) throw new Error(error.message);
+      toast.success(`Welcome, ${res.displayName}`);
+      setAdPass("");
+      navigate({ to: "/dashboard" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Active Directory sign-in failed");
+    } finally {
+      setAdLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex flex-col justify-between p-12 bg-sidebar text-sidebar-foreground">
@@ -81,11 +109,31 @@ function AuthPage() {
             <CardDescription>Sign in with your work account.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin">
-              <TabsList className="grid grid-cols-2 w-full">
+            <Tabs defaultValue={adEnabled ? "ad" : "signin"}>
+              <TabsList className={`grid w-full ${adEnabled ? "grid-cols-3" : "grid-cols-2"}`}>
+                {adEnabled && <TabsTrigger value="ad">Active Directory</TabsTrigger>}
                 <TabsTrigger value="signin">Sign in</TabsTrigger>
                 <TabsTrigger value="signup">Create account</TabsTrigger>
               </TabsList>
+              {adEnabled && (
+                <TabsContent value="ad">
+                  <form onSubmit={signInWithAd} className="space-y-4 pt-4">
+                    <div className="flex items-center gap-2 rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
+                      <Building2 className="h-4 w-4 shrink-0" />
+                      <span>Use your domain account{adMode.data?.domain ? ` for ${adMode.data.domain}` : ""}. Your password is verified by the domain controller and never stored here.</span>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adUser">Domain username</Label>
+                      <Input id="adUser" required autoComplete="username" placeholder="jdoe" value={adUser} onChange={(e) => setAdUser(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="adPass">Password</Label>
+                      <Input id="adPass" type="password" required autoComplete="current-password" value={adPass} onChange={(e) => setAdPass(e.target.value)} />
+                    </div>
+                    <Button className="w-full" disabled={adLoading}>{adLoading ? "Verifying with Active Directory…" : "Sign in with Active Directory"}</Button>
+                  </form>
+                </TabsContent>
+              )}
               <TabsContent value="signin">
                 <form onSubmit={signIn} className="space-y-4 pt-4">
                   <div className="space-y-2">
