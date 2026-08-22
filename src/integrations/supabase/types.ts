@@ -42,7 +42,15 @@ export type Database = {
           sent_at?: string
           success?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_point_reminders_sent_action_point_id_fkey"
+            columns: ["action_point_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_action_points"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       activity_log: {
         Row: {
@@ -267,7 +275,29 @@ export type Database = {
           to_location_id?: string | null
           to_user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "asset_movements_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_movements_from_location_id_fkey"
+            columns: ["from_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_movements_to_location_id_fkey"
+            columns: ["to_location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assets: {
         Row: {
@@ -378,7 +408,22 @@ export type Database = {
           warranty_start?: string | null
           windows_version?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attachments: {
         Row: {
@@ -522,7 +567,22 @@ export type Database = {
           status?: Database["public"]["Enums"]["action_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "briefing_action_points_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_action_points_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       briefing_departments: {
         Row: {
@@ -537,7 +597,22 @@ export type Database = {
           briefing_id?: string
           department_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "briefing_departments_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "briefing_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       briefing_participants: {
         Row: {
@@ -552,7 +627,15 @@ export type Database = {
           briefing_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "briefing_participants_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       briefing_rooms: {
         Row: {
@@ -606,7 +689,15 @@ export type Database = {
           vip2_rooms?: number
           vip3_rooms?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "briefing_rooms_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: true
+            referencedRelation: "briefings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       briefings: {
         Row: {
@@ -768,7 +859,15 @@ export type Database = {
           updated_at?: string
           warranty_end?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "network_devices_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_preferences: {
         Row: {
@@ -819,7 +918,15 @@ export type Database = {
           success?: boolean
           task_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pm_reminders_sent_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "pm_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pm_schedules: {
         Row: {
@@ -927,7 +1034,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pm_tasks_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "pm_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1014,7 +1129,22 @@ export type Database = {
           user_principal_name?: string | null
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_dept_fk"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servers: {
         Row: {
@@ -1080,7 +1210,15 @@ export type Database = {
           updated_at?: string
           vm_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "servers_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       software: {
         Row: {
@@ -1161,7 +1299,15 @@ export type Database = {
           is_internal?: boolean
           ticket_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tickets: {
         Row: {
@@ -1221,7 +1367,29 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tickets_action_point_id_fkey"
+            columns: ["action_point_id"]
+            isOneToOne: false
+            referencedRelation: "briefing_action_points"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
